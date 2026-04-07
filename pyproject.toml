@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 61.0"]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -11,7 +11,7 @@ authors = [
 description = "Backend server for serving PolarRoute and MeshiPhi assets and managing their calcuation using Django & Celery."
 readme = "README.md"
 license = {file = "LICENSE"}
-version = "0.2.4"
+dynamic = ["version"]
 requires-python = ">= 3.10"
 dependencies = [
     "celery",
@@ -20,6 +20,7 @@ dependencies = [
     "django-celery-results",
     "django-cors-headers",
     "django-rest-framework",
+    "django-taggit",
     "drf-spectacular[sidecar]",
     "haversine",
     "polar-route>=1.1.10",
@@ -36,6 +37,9 @@ Issues = "https://github.com/bas-amop/PolarRoute-server/issues"
 [tool.setuptools.packages.find]
 where = ["."]
 exclude = ["tests*"]
+
+[tool.setuptools_scm]
+version_file = "polarrouteserver/_version.py"
 
 [tool.setuptools.exclude-package-data]
 polarrouteserver = [

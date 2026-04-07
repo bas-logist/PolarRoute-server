@@ -1,5 +1,5 @@
 .env
-
+polarrouteserver/_version.py
 database/*
 
 # Django #

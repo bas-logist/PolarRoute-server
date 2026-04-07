@@ -12,7 +12,7 @@ import logging
 import os
 import secrets
 
-from polarrouteserver.version import __version__ as polarrouteserver_version
+from polarrouteserver._version import __version__ as polarrouteserver_version
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,7 @@ DEBUG = os.getenv("POLARROUTE_DEBUG", "False").lower() == "True"
 ALLOWED_HOSTS = [
     "localhost",
     "0.0.0.0",
+    "127.0.0.1",
 ]
 if os.getenv("POLARROUTE_ALLOWED_HOSTS", None) is not None:
     ALLOWED_HOSTS.extend(os.getenv("POLARROUTE_ALLOWED_HOSTS").split(","))
@@ -91,13 +92,21 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "drf_spectacular_sidecar",
+    "taggit",
     "polarrouteserver.route_api",
     "corsheaders",
 ]
 
-CORS_ALLOWED_ORIGINS = ["http://localhost:8000"]
+CORS_ALLOWED_ORIGINS = []
 if os.getenv("POLARROUTE_CORS_ALLOWED_ORIGINS", None) is not None:
     CORS_ALLOWED_ORIGINS.extend(os.getenv("POLARROUTE_CORS_ALLOWED_ORIGINS").split(","))
+
+# Allow all localhost origins for CORS in development
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^(?:https*:\/\/)*localhost:\d{2,4}$",  # matches localhost with or without http(s):// and a port of 2-4 digits
+    r"^(?:https*:\/\/)*127.0.0.1:\d{2,4}$",  # same for 127.0.0.1
+    r"^(?:https*:\/\/)*0.0.0.0:\d{2,4}$",  # same for 0.0.0.0
+]
 
 CORS_ALLOW_METHODS = ("DELETE", "GET", "POST", "OPTIONS")
 
@@ -126,6 +135,8 @@ SPECTACULAR_SETTINGS = {
     "SECURITY": [],
     "AUTHENTICATION_WHITELIST": [],
 }
+
+TAGGIT_CASE_INSENSITIVE = True
 
 ROOT_URLCONF = "polarrouteserver.urls"
 
@@ -230,7 +241,7 @@ FUEL_CONFIG = base_routeplanner_config | {"objective_function": "fuel"}
 # dictionary relating user-friendly name of data source with loader value used in vessel mesh json
 EXPECTED_MESH_DATA_SOURCES = {
     "bathymetry": "GEBCO",
-    "current": "duacs_current",
+    "current": "duacs_currents",
     "sea ice concentration": "amsr",
     "thickness": "thickness",
     "density": "density",

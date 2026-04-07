@@ -3,6 +3,7 @@ import logging
 from celery.result import AsyncResult
 from django.db import models
 from django.utils import timezone
+from taggit.managers import TaggableManager
 
 from polarrouteserver.celery import app
 
@@ -71,6 +72,7 @@ class Route(models.Model):
     json = models.JSONField(null=True)
     json_unsmoothed = models.JSONField(null=True)
     polar_route_version = models.CharField(max_length=60, null=True)
+    tags = TaggableManager(blank=True, help_text="Tags for route")
 
 
 class Job(models.Model):

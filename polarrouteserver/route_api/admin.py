@@ -16,6 +16,7 @@ class RouteAdmin(admin.ModelAdmin):
         "id",
         "display_start",
         "display_end",
+        "display_tags",
         "requested",
         "calculated",
         "job_id",
@@ -24,28 +25,35 @@ class RouteAdmin(admin.ModelAdmin):
         "polar_route_version",
     ]
     ordering = ("-requested",)
+    list_filter = ("tags", "calculated", "requested")
+    search_fields = ("start_name", "end_name", "tags__name")
 
     list_select_related = ("mesh",)
 
     def get_queryset(self, request):
         # Load only the fields necessary for the changelist view
         queryset = super().get_queryset(request)
-        return queryset.defer("json", "json_unsmoothed", "mesh__json")
+        return queryset.defer("json", "json_unsmoothed", "mesh__json").prefetch_related(
+            "tags"
+        )
 
     def get_fieldsets(self, request, obj=None):
-        # contain the json fields in a collapsed section of the page
+        # Contain the json fields in a collapsed section of the page
         collapsed_fields = ("json", "json_unsmoothed")
         if obj:
+            # Get regular model fields excluding collapsed ones and id
+            regular_fields = [
+                f.name
+                for f in self.model._meta.fields
+                if f.name not in collapsed_fields + ("id",)
+            ]
+            # Add tags field (it is a TaggableManager, not a regular field)
+            regular_fields.append("tags")
+
             return [
                 (
                     None,
-                    {
-                        "fields": [
-                            f.name
-                            for f in self.model._meta.fields
-                            if f.name not in collapsed_fields + ("id",)
-                        ]
-                    },
+                    {"fields": regular_fields},
                 ),
                 (
                     "Click to expand JSON fields",
@@ -67,16 +75,24 @@ class RouteAdmin(admin.ModelAdmin):
         else:
             return f"({obj.end_lat},{obj.end_lon})"
 
+    def display_tags(self, obj):
+        """Display tags as a comma-separated string."""
+        tags = obj.tags.all()
+        if tags:
+            return ", ".join([tag.name for tag in tags])
+        return "-"
+
     def job_id(self, obj):
         job = obj.job_set.latest("datetime")
         return f"{job.id}"
 
     display_start.short_description = "Start (lat,lon)"
     display_end.short_description = "End (lat,lon)"
+    display_tags.short_description = "Tags"
     job_id.short_description = "Job ID (latest)"
 
     def get_readonly_fields(self, request, obj=None):
-        editable_fields = ("requested", "calculated", "start_name", "end_name")
+        editable_fields = ("requested", "calculated", "start_name", "end_name", "tags")
 
         if obj:
             # Return a list of all field names on the model

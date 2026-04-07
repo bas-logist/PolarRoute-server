@@ -1,11 +1,12 @@
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import timedelta
 from unittest.mock import patch, PropertyMock
 
 import celery.states
 from django.conf import settings
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIRequestFactory
 import pytest
 
@@ -336,6 +337,130 @@ class TestRouteRequest(TestCase):
             "status-url"
         )
 
+    def test_request_route_with_tags(self):
+        """Test that routes can be created with optional tags."""
+        data = {
+            "start_lat": 0.1,
+            "start_lon": 0.1,
+            "end_lat": 0.9,
+            "end_lon": 0.9,
+            "start_name": "Test Start",
+            "end_name": "Test End",
+            "tags": ["archive_test"],
+        }
+
+        request = self.factory.post(
+            "/api/route", data=data, format="json"
+        )
+
+        response = RouteRequestView.as_view()(request)
+
+        self.assertEqual(response.status_code, 202)
+
+        # Verify the route was created with the correct tag
+        from polarrouteserver.route_api.models import Route
+        route = Route.objects.filter(
+            start_lat=0.1,
+            start_lon=0.1,
+            end_lat=0.9,
+            end_lon=0.9
+        ).first()
+
+        self.assertIsNotNone(route)
+        self.assertIn("archive_test", [tag.name for tag in route.tags.all()])
+
+    def test_request_route_without_tags(self):
+        """Test that routes can be created without tags (tag is optional)."""
+        data = {
+            "start_lat": 0.2,
+            "start_lon": 0.2,
+            "end_lat": 0.8,
+            "end_lon": 0.8,
+        }
+
+        request = self.factory.post(
+            "/api/route", data=data, format="json"
+        )
+
+        response = RouteRequestView.as_view()(request)
+
+        self.assertEqual(response.status_code, 202)
+
+        # Verify the route was created without any tags
+        from polarrouteserver.route_api.models import Route
+        route = Route.objects.filter(
+            start_lat=0.2,
+            start_lon=0.2,
+            end_lat=0.8,
+            end_lon=0.8
+        ).first()
+
+        self.assertIsNotNone(route)
+        self.assertEqual(route.tags.count(), 0)
+
+    def test_request_route_with_comma_separated_tags(self):
+        """Test that routes can be created with comma-separated tag string."""
+        data = {
+            "start_lat": 0.3,
+            "start_lon": 0.3,
+            "end_lat": 0.7,
+            "end_lon": 0.7,
+            "tags": "archive,experiment, test_tag ",  # Test comma separation and whitespace
+        }
+
+        request = self.factory.post(
+            "/api/route", data=data, format="json"
+        )
+
+        response = RouteRequestView.as_view()(request)
+        self.assertEqual(response.status_code, 202)
+
+        # Verify the route was created with the correct tags
+        from polarrouteserver.route_api.models import Route
+        route = Route.objects.filter(
+            start_lat=0.3,
+            start_lon=0.3,
+            end_lat=0.7,
+            end_lon=0.7
+        ).first()
+
+        self.assertIsNotNone(route)
+        tag_names = [tag.name for tag in route.tags.all()]
+        self.assertIn("archive", tag_names)
+        self.assertIn("experiment", tag_names)
+        self.assertIn("test_tag", tag_names)
+        self.assertEqual(len(tag_names), 3)
+
+
+    def test_request_route_with_invalid_tags_type(self):
+        """Test that routes handle invalid tag types gracefully."""
+        data = {
+            "start_lat": 0.5,
+            "start_lon": 0.5,
+            "end_lat": 0.5,
+            "end_lon": 0.5,
+            "tags": {"invalid": "dict"},  # Invalid type should result in no tags
+        }
+
+        request = self.factory.post(
+            "/api/route", data=data, format="json"
+        )
+
+        response = RouteRequestView.as_view()(request)
+        self.assertEqual(response.status_code, 202)
+
+        # Verify the route was created without tags
+        from polarrouteserver.route_api.models import Route
+        route = Route.objects.filter(
+            start_lat=0.5,
+            start_lon=0.5,
+            end_lat=0.5,
+            end_lon=0.5
+        ).first()
+
+        self.assertIsNotNone(route)
+        self.assertEqual(route.tags.count(), 0)
+
     def test_evaluate_route(self):
         with open(settings.TEST_ROUTE_PATH) as fp:
             route_json = json.load(fp)
@@ -598,17 +723,25 @@ class TestGetRecentRoutesAndMesh(TestCase):
         self.factory = APIRequestFactory()
         self.mesh = add_test_mesh_to_db()
         # Create routes with calculated timestamps so they'll be found by the recent routes filter
-        now = datetime.now(timezone.utc)
+        now = timezone.now()
+        within_24_hours = now - timedelta(hours=18)
+        longer_than_24_hours = now - timedelta(hours=25)
         self.route1 = Route.objects.create(
             start_lat=0.0, start_lon=0.0, end_lat=0.0, end_lon=0.0, 
-            mesh=self.mesh, calculated=now
+            mesh=self.mesh, calculated=now, requested=now,
         )
         self.route2 = Route.objects.create(
             start_lat=1.0, start_lon=1.0, end_lat=1.0, end_lon=0.0, 
-            mesh=self.mesh, calculated=now
+            mesh=self.mesh, calculated=within_24_hours, requested=within_24_hours,
         )
+        self.route3 = Route.objects.create(
+            start_lat=1.0, start_lon=1.0, end_lat=1.0, end_lon=0.0, 
+            mesh=self.mesh, calculated=longer_than_24_hours, requested=longer_than_24_hours,
+        )
+        
         self.job1 = Job.objects.create(id=uuid.uuid1(), route=self.route1)
         self.job2 = Job.objects.create(id=uuid.uuid1(), route=self.route2)
+        self.job3 = Job.objects.create(id=uuid.uuid1(), route=self.route3)
 
     def test_recent_routes_request(self):
 
@@ -792,6 +925,37 @@ class TestGetRecentRoutesAndMesh(TestCase):
                 job_status_url = route["job_status_url"] 
                 assert isinstance(job_status_url, str)
                 assert f"/api/job/{route['job_id']}" in job_status_url
+
+    def test_recent_routes_includes_tags(self):
+        """Test that recent routes include tag information."""
+        # Create a route with tags
+        from polarrouteserver.route_api.models import Route
+        route = Route.objects.create(
+            start_lat=1.0,
+            start_lon=1.0,
+            end_lat=2.0,
+            end_lon=2.0,
+        )
+        route.tags.add("test_tag", "recent_test")
+        
+        request = self.factory.get("/api/recent_routes")
+        response = RecentRoutesView.as_view()(request)
+        
+        self.assertEqual(response.status_code, 200)
+        routes = response.data["routes"]
+        
+        # Find our test route in the response
+        test_route = None
+        for route_data in routes:
+            if route_data["id"] == route.id:
+                test_route = route_data
+                break
+        
+        self.assertIsNotNone(test_route)
+        self.assertIn("tags", test_route)
+        self.assertIsInstance(test_route["tags"], list)
+        self.assertIn("test_tag", test_route["tags"])
+        self.assertIn("recent_test", test_route["tags"])
 
     def test_mesh_get(self):
 

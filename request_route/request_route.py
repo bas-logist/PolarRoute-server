@@ -27,7 +27,7 @@ class Location:
 
 STANDARD_LOCATIONS = {
     "bird": Location(-54.025, -38.044, "bird"),
-    "falklands": Location(-51.731, -57.706, "falklands"),
+    "mareharbour": Location(-51.902, -58.494, "mareharbour"),
     "halley": Location(-75.059, -25.840, "halley"),
     "rothera": Location(-67.764, -68.02, "rothera"),
     "kep": Location(-54.220, -36.433, "kep"),
@@ -87,6 +87,7 @@ def request_route(
     num_requests: int = 10,
     force_new_route: bool = False,
     mesh_id: int = None,
+    tags: list = None,
 ) -> str:
     """Requests a route from polarRouteServer, monitors job status until complete, then retrieves route data.
 
@@ -98,6 +99,7 @@ def request_route(
         num_requests (int, optional): Max number of status requests before giving up. Defaults to 10.
         force_new_route (bool, optional): Force recalculation of an already existing route. Default: False.
         mesh_id (int, optional): Custom mesh ID to use for route calculation. Default: None.
+        tags (list, optional): Tags to assign to the route. Default: None.
 
     Raises:
         Exception: If no status URL is returned.
@@ -122,6 +124,7 @@ def request_route(
                 "end_name": end.name,
                 "force_new_route": force_new_route,
                 "mesh_id": mesh_id,
+                "tags": tags,
             },
         ).encode("utf-8"),
     )
@@ -276,6 +279,13 @@ def parse_args():
         help="Force polarRouteServer to create a new route even if one is already available.",
     )
     parser.add_argument(
+        "-t",
+        "--tags",
+        type=str,
+        nargs="*",
+        help="Tags to assign to the route (e.g., 'archive' 'SD056'). Can specify multiple tags separated by spaces.",
+    )
+    parser.add_argument(
         "-o",
         "--output",
         nargs="?",
@@ -296,6 +306,7 @@ def main():
         status_update_delay=args.delay,
         force_new_route=args.force,
         mesh_id=args.meshid,
+        tags=args.tags,
     )
 
     if route is None:

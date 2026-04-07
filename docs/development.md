@@ -26,9 +26,9 @@ A number of helpful development tools are made available through the `Makefile`,
 
 Version numbers should be used in tagging commits on the `main` branch and reflected in the `pyproject.toml` file and should be of the form `v0.1.7` using the semantic versioning convention.
 
-The `Unreleased` section of `CHANGELOG.md` should be amended to the new version number.
+**Note on version numbers**: Setuptools-scm requires version numbers that begin with a `v` and setuptools requires [PEP 440-compliant version numbers](https://peps.python.org/pep-0440/), e.g. `v0.1.7`, or for non release versions: `v0.1.7a1` for alphas, `v0.1.7rc1` for release candidates. Installing the package will fail if tags have version numbers deviating from this format.
 
-Release preparation (i.e. updating version numbers in `CHANGELOG.md`, `pyproject.toml` and `apischema.yml`) can be done automatically with `make prep-release version=<VERSION-NUMBER>` (without the 'v'). Note that this does not rebuild the API schema, just changes the version number.
+Release preparation (i.e. updating version numbers in `CHANGELOG.md` and `apischema.yml`) can be done automatically with `make prep-release version=<VERSION-NUMBER>` (without the 'v'). Note that this does not rebuild the API schema, just changes the version number.
 
 ## Building & deploying the documentation
 

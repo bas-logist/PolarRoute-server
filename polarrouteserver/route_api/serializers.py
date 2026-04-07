@@ -1,10 +1,11 @@
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 from celery.result import AsyncResult
+from taggit.serializers import TaggitSerializer, TagListSerializerField
 
 from .models import Mesh, Vehicle, Route, Job, Location
 from polarrouteserver.celery import app
-from polarrouteserver.version import __version__ as polarrouteserver_version
+from polarrouteserver._version import __version__ as polarrouteserver_version
 
 
 class JobStatusSerializer(serializers.ModelSerializer):
@@ -100,7 +101,9 @@ class VesselTypeSerializer(serializers.Serializer):
         vessel_type = serializers.CharField()
 
 
-class RouteSerializer(serializers.ModelSerializer):
+class RouteSerializer(TaggitSerializer, serializers.ModelSerializer):
+    tags = TagListSerializerField()
+
     class Meta:
         model = Route
         fields = [
@@ -118,6 +121,7 @@ class RouteSerializer(serializers.ModelSerializer):
             "mesh",
             "requested",
             "calculated",
+            "tags",
         ]
 
     def _extract_routes_by_type(self, route_data, route_type):
@@ -282,6 +286,7 @@ class RouteSerializer(serializers.ModelSerializer):
         result = {
             "routes": available_routes,
             "polarrouteserver-version": polarrouteserver_version,
+            "tags": data.get("tags", []),
         }
 
         # Add error if no routes available

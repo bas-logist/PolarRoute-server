@@ -271,7 +271,7 @@ def check_mesh_data(mesh: Mesh) -> str:
         # check for missing individual data sources
         data_source = [d for d in mesh_data_sources if d["loader"] == data_loader]
         if len(data_source) == 0:
-            message += f"No {data_type} data available for this mesh.\n"
+            message += f"Warning: This mesh is missing data on the following parameters: {data_type}.\n"
 
             # skip to the next data source
             continue
@@ -283,6 +283,6 @@ def check_mesh_data(mesh: Mesh) -> str:
                 [f for f in data_source[0]["params"]["files"] if f != ""]
             )  # number of files removing empty strings
             if actual_num_files != data_source_num_expected_files:
-                message += f"{actual_num_files} of expected {data_source_num_expected_files} days' data available for {data_type}.\n"
+                message += f"Warning: {actual_num_files} of expected {data_source_num_expected_files} days' data available for {data_type}.\n"
 
     return message

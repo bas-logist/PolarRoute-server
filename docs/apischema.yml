@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: PolarRoute-Server
-  version: 0.2.4
+  version: 0.2.7
   description: Backend server for serving PolarRoute and MeshiPhi assets
 paths:
   /api/evaluate_route:
@@ -763,6 +763,14 @@ components:
           default: false
           description: If true, forces recalculation even if an existing route is
             found.
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          nullable: true
+          description: Optional tags for route (e.g., ['archive', 'SD056']). Can also
+            accept a single string or comma-separated string.
       required:
       - end_lat
       - end_lon

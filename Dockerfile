@@ -21,5 +21,6 @@ COPY --chmod=775 docker-entrypoint.sh .
 COPY pyproject.toml manage.py /usr/src/app/
 COPY polarrouteserver /usr/src/app/polarrouteserver
 
+ENV SETUPTOOLS_SCM_PRETEND_VERSION=99.99.99
 RUN uv pip install --system -e .
 RUN uv pip install --system django-debug-toolbar

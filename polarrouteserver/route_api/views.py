@@ -1,7 +1,9 @@
 import logging
-from datetime import datetime
+from datetime import timedelta
 
 from celery.result import AsyncResult
+from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
 from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
@@ -13,9 +15,10 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.views import APIView
 from rest_framework.reverse import reverse
 from rest_framework import serializers, viewsets
+from taggit.models import TaggedItem
 
 from polar_route.config_validation.config_validator import validate_vessel_config
-from polarrouteserver.version import __version__ as polarrouteserver_version
+from polarrouteserver._version import __version__ as polarrouteserver_version
 from polarrouteserver.celery import app
 
 from .models import Job, Vehicle, Route, Mesh, Location
@@ -318,6 +321,12 @@ class RouteRequestView(LoggingMixin, ResponseMixin, GenericAPIView):
                     default=False,
                     help_text="If true, forces recalculation even if an existing route is found.",
                 ),
+                "tags": serializers.ListField(
+                    child=serializers.CharField(max_length=50),
+                    required=False,
+                    allow_null=True,
+                    help_text="Optional tags for route (e.g., ['archive', 'SD056']). Can also accept a single string or comma-separated string.",
+                ),
             },
         ),
         responses={
@@ -350,6 +359,7 @@ class RouteRequestView(LoggingMixin, ResponseMixin, GenericAPIView):
         end_name = data.get("end_name", None)
         custom_mesh_id = data.get("mesh_id", None)
         force_new_route = data.get("force_new_route", False)
+        tags = data.get("tags", None)
 
         if custom_mesh_id:
             try:
@@ -408,6 +418,24 @@ class RouteRequestView(LoggingMixin, ResponseMixin, GenericAPIView):
             start_name=start_name,
             end_name=end_name,
         )
+
+        # Add tags if provided
+        if tags:
+            # Handle both string and list inputs
+            if isinstance(tags, str):
+                # If it's a string, split by comma and strip whitespace
+                tags_list = [t.strip() for t in tags.split(",") if t.strip()]
+            elif isinstance(tags, list):
+                tags_list = [str(t).strip() for t in tags if str(t).strip()]
+            else:
+                tags_list = []
+
+            logger.info(f"Adding tags to route {route.id}: {tags_list}")
+            if tags_list:
+                route.tags.add(*tags_list)
+                logger.info(
+                    f"Route {route.id} now has tags: {[tag.name for tag in route.tags.all()]}"
+                )
 
         # Start the task calculation
         task = optimise_route.delay(
@@ -493,7 +521,7 @@ class RecentRoutesView(LoggingMixin, ResponseMixin, GenericAPIView):
 
         # Only get today's routes
         routes_recent = (
-            Route.objects.filter(requested__date=datetime.now().date())
+            Route.objects.filter(requested__gte=timezone.now() - timedelta(hours=24))
             .select_related("job")
             .values(
                 "id",
@@ -514,21 +542,41 @@ class RecentRoutesView(LoggingMixin, ResponseMixin, GenericAPIView):
             .order_by("-requested")
         )
 
-        logger.debug(f"Found {len(routes_recent)} routes calculated today.")
-
         if not routes_recent:
             return self.success_response(
                 {
                     "routes": [],
                     "polarrouteserver-version": polarrouteserver_version,
-                    "message": "No recent routes found for today.",
+                    "message": "No recent routes found for last 24 hours.",
                 }
             )
 
+        # Get route IDs for tag lookup
+        route_ids = [route["id"] for route in routes_recent]
+
+        # Get all tags for routes in one query
+        route_tags = {}
+        if route_ids:
+            content_type = ContentType.objects.get_for_model(Route)
+            tagged_items = (
+                TaggedItem.objects.filter(
+                    content_type=content_type, object_id__in=route_ids
+                )
+                .select_related("tag")
+                .values("object_id", "tag__name")
+            )
+
+            for item in tagged_items:
+                route_id = int(item["object_id"])
+                if route_id not in route_tags:
+                    route_tags[route_id] = []
+                route_tags[route_id].append(item["tag__name"])
+
         routes_data = []
         for route in routes_recent:
+            job_id = route.get("job__id")
             status = self._get_celery_task_status(
-                route["job__id"], route["calculated"], route["info"]
+                job_id, route["calculated"], route["info"]
             )
 
             # Build lightweight route data
@@ -551,12 +599,13 @@ class RecentRoutesView(LoggingMixin, ResponseMixin, GenericAPIView):
                 "route_url": reverse(
                     "route_detail", args=[route["id"]], request=request
                 ),
+                "tags": route_tags.get(route["id"], []),
             }
 
-            if route["job__id"]:
-                route_data["job_id"] = route["job__id"]
+            if job_id:
+                route_data["job_id"] = job_id
                 route_data["job_status_url"] = reverse(
-                    "job_detail", args=[route["job__id"]], request=request
+                    "job_detail", args=[job_id], request=request
                 )
 
             # Add minimal mesh info without loading the heavy JSON
