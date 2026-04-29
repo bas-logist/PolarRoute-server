@@ -6,8 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
- 
- 
+
+### Fixed
+- Configured Celery to use durable, named queues to resolve `INTERNAL_ERROR - Feature 'transient_nonexcl_queues' is deprecated` error from RabbitMQ. Added `CELERY_TASK_QUEUES`, `CELERY_TASK_DEFAULT_QUEUE`, `CELERY_TASK_DEFAULT_EXCHANGE`, and `CELERY_TASK_DEFAULT_ROUTING_KEY` settings in `base.py`.
+
+
 ## 0.2.7 - 2025-12-22
 
 ### Added

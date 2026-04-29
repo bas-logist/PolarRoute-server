@@ -12,6 +12,8 @@ import logging
 import os
 import secrets
 
+from kombu import Queue
+
 from polarrouteserver._version import __version__ as polarrouteserver_version
 
 logger = logging.getLogger(__name__)
@@ -205,6 +207,12 @@ CELERY_WORKER_HIJACK_ROOT_LOGGER = True
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "amqp://guest:guest@localhost")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "django-db")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# Use durable queues to avoid RabbitMQ deprecation of transient_nonexcl_queues
+CELERY_TASK_QUEUES = (Queue("default", durable=True),)
+CELERY_TASK_DEFAULT_QUEUE = "default"
+CELERY_TASK_DEFAULT_EXCHANGE = "default"
+CELERY_TASK_DEFAULT_ROUTING_KEY = "default"
 
 
 # Routing settings (TODO: hardcoded, can / should these be exposed elsewhere?)
