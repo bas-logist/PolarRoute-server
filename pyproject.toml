@@ -19,6 +19,7 @@ dependencies = [
     "django-celery-beat",
     "django-celery-results",
     "django-cors-headers",
+    "django-health-check[psutil,rabbitmq,celery]",
     "django-rest-framework",
     "django-taggit",
     "drf-spectacular[sidecar]",

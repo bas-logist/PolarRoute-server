@@ -25,3 +25,6 @@ ENV SETUPTOOLS_SCM_PRETEND_VERSION=99.99.99
 
 RUN uv pip install --system -e .
 RUN uv pip install --system django-debug-toolbar debugpy
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/')" || exit 1

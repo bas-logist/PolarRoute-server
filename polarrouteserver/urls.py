@@ -1,7 +1,9 @@
 from django.contrib import admin
+from django.conf import settings
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from health_check.views import HealthCheckView
 
 from polarrouteserver.route_api import views
 
@@ -56,6 +58,11 @@ urlpatterns = [
     path("api/mesh/<int:id>", views.MeshView.as_view(), name="mesh_detail"),
     path(
         "api/evaluate_route", views.EvaluateRouteView.as_view(), name="evaluate_route"
+    ),
+    path(
+        "health/",
+        HealthCheckView.as_view(checks=settings.HEALTH_CHECKS),
+        name="health_check",
     ),
 ]
 
