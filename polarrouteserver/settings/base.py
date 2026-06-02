@@ -243,7 +243,7 @@ base_routeplanner_config = {
     "time_unit": "days",
     "early_stopping_criterion": True,
     "save_dijkstra_graphs": True,
-    "waypoint_splitting": False,  # switched off until github.com/bas-amop/polarroute/issues#303 is resolved
+    "waypoint_splitting": False,  # switched off until github.com/bas-logist/polarroute/issues#303 is resolved
     "smooth_path": {"max_iteration_number": 1000, "minimum_difference": 0.0005},
     "smoothing_max_iterations": 100,
     "smoothing_merge_separation": 1e-3,

@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 if MESH_DIR is None:
     pass
-    # disabling these warnings in settings modules until we can resolve https://github.com/bas-amop/PolarRoute-server/issues/49
+    # disabling these warnings in settings modules until we can resolve https://github.com/bas-logist/PolarRoute-server/issues/49
     # logger.warning(
     #     "POLARROUTE_MESH_DIR or POLARROUTE_MESH_METADATA_DIR not set, both are required to ingest new meshes into database.\n\
     #                No new meshes will be automatically ingested."
