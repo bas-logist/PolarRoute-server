@@ -56,9 +56,6 @@ dev = [
     "pytest-django",
     "ruff",
 ]
-prod = [
-    "gunicorn"
-]
 build = [
     "build"
 ]
@@ -77,6 +74,10 @@ docs = [
     "mkdocs-include-markdown-plugin",
     "mkdocstrings[python]",
     "mkdocs-render-swagger-plugin",
+]
+production = [
+    "gunicorn",
+    "whitenoise",
 ]
 
 [project.scripts]

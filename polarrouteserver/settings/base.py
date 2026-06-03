@@ -74,9 +74,9 @@ CELERY_LOGGING = {
         },
     },
     "loggers": {
-        "celery": {"handlers": ["celery"], "level": "INFO", "propagate": False},
+        "celery": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
-    "root": {"handlers": ["default"], "level": "DEBUG"},
+    "root": {"handlers": ["console"], "level": "DEBUG"},
 }
 
 # Application definition
@@ -213,7 +213,6 @@ HEALTH_CHECKS = [
     "health_check.DNS",
     "health_check.Database",
     "health_check.Storage",
-    "health_check.contrib.psutil.Disk",
     "health_check.contrib.celery.Ping",
     (
         "health_check.contrib.rabbitmq.RabbitMQ",

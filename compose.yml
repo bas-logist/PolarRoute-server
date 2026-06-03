@@ -1,10 +1,12 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      target: dev
     ports:
       - 8000:8000
     environment:
-      DJANGO_SETTINGS_MODULE: polarrouteserver.settings.development
+      DJANGO_SETTINGS_MODULE: polarrouteserver.settings.docker.development
       CELERY_BROKER_URL: amqp://guest:guest@rabbitmq
       POLARROUTE_MESH_DIR: /usr/src/app/mesh
       POLARROUTE_DB_HOST: db
@@ -35,9 +37,11 @@ services:
       - 5432:5432
 
   celery:
-    build: .
+    build:
+      context: .
+      target: dev
     environment:
-      DJANGO_SETTINGS_MODULE: polarrouteserver.settings.development
+      DJANGO_SETTINGS_MODULE: polarrouteserver.settings.docker.development
       CELERY_BROKER_URL: amqp://guest:guest@rabbitmq
       POLARROUTE_MESH_DIR: /usr/src/app/mesh
       POLARROUTE_DB_HOST: db
