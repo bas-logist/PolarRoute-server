@@ -6,8 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
- 
- 
+
+### Added
+- Added `route_type` parameter to `evaluate_route`, allowing user to specify the route type used in `route_calc`.
+- Added `route_type` parameter to the route evaluation API endpoint and updated API schema.
+
+### Changed
+- Updated `evaluate_route` to call `route_calc` using keyword arguments.
+- Restricted `polar-route` dependency to `>=1.1.10`.
+
+
+
 ## 0.2.7 - 2025-12-22
 
 ### Added
