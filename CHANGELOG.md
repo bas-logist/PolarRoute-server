@@ -15,9 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated `evaluate_route` to call `route_calc` using keyword arguments.
 - Restricted `polar-route` dependency to `>=1.1.10`.
-
-
-
  
 ## 0.2.7 - 2025-12-22
 
