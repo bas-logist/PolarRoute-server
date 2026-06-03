@@ -169,7 +169,7 @@ def calculate_md5(filename):
     return hash_md5.hexdigest()
 
 
-def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
+def evaluate_route(route_json: dict, mesh: Mesh, route_type: str = "smoothed") -> dict:
     """Run calculate_route method from PolarRoute to evaluate the fuel usage and travel time of a route.
 
     Args:
@@ -207,7 +207,9 @@ def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
         to_wp = f"waypoint_{len(coordinates)-1}"
 
         # Use route_calc with the new API: (df, from_wp, to_wp, mesh, route_type)
-        calc_route = route_calc(df=df, from_wp=from_wp, to_wp=to_wp, mesh=mesh.json, route_type="fuel")
+        calc_route = route_calc(
+            df=df, from_wp=from_wp, to_wp=to_wp, mesh=mesh.json, route_type=route_type
+        )
 
         # Extract time and fuel information
         time_days = calc_route["features"][0]["properties"]["traveltime"][-1]
