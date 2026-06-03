@@ -207,7 +207,7 @@ def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
         to_wp = f"waypoint_{len(coordinates)-1}"
 
         # Use route_calc with the new API: (df, from_wp, to_wp, mesh, route_type)
-        calc_route = route_calc(df, from_wp, to_wp, mesh.json, "fuel")
+        calc_route = route_calc(df=df, from_wp=from_wp, to_wp=to_wp, mesh=mesh.json, route_type="fuel")
 
         # Extract time and fuel information
         time_days = calc_route["features"][0]["properties"]["traveltime"][-1]
