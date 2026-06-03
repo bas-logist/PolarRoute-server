@@ -1,3 +1,5 @@
+"""Representations of database objects with the Django object relational model."""
+
 import logging
 
 from celery.result import AsyncResult
@@ -11,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class Mesh(models.Model):
+    "Mesh"
+
     id = models.BigAutoField(primary_key=True)
     meshiphi_version = models.CharField(max_length=60, null=True)
     md5 = models.CharField(max_length=64)
@@ -35,6 +39,8 @@ class Mesh(models.Model):
 
 
 class Vehicle(models.Model):
+    "Vehicle objects"
+
     # Required properties
     vessel_type = models.CharField(
         max_length=150, default=None, unique=True, primary_key=True
@@ -59,6 +65,8 @@ class Vehicle(models.Model):
 
 
 class Route(models.Model):
+    "Represents a route."
+
     requested = models.DateTimeField(default=timezone.now)
     calculated = models.DateTimeField(null=True)
     info = models.JSONField(null=True)

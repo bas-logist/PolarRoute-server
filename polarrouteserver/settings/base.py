@@ -95,6 +95,7 @@ INSTALLED_APPS = [
     "taggit",
     "polarrouteserver.route_api",
     "corsheaders",
+    "health_check",
 ]
 
 CORS_ALLOWED_ORIGINS = []
@@ -206,6 +207,19 @@ CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "amqp://guest:guest@localhost
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "django-db")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
+# django-health-check settings
+HEALTH_CHECKS = [
+    "health_check.Cache",
+    "health_check.DNS",
+    "health_check.Database",
+    "health_check.Storage",
+    "health_check.contrib.psutil.Disk",
+    "health_check.contrib.celery.Ping",
+    (
+        "health_check.contrib.rabbitmq.RabbitMQ",
+        {"amqp_url": CELERY_BROKER_URL},
+    ),
+]
 
 # Routing settings (TODO: hardcoded, can / should these be exposed elsewhere?)
 WAYPOINT_DISTANCE_TOLERANCE = 1  # Nautical Miles
@@ -229,7 +243,7 @@ base_routeplanner_config = {
     "time_unit": "days",
     "early_stopping_criterion": True,
     "save_dijkstra_graphs": True,
-    "waypoint_splitting": False,  # switched off until github.com/bas-amop/polarroute/issues#303 is resolved
+    "waypoint_splitting": False,  # switched off until github.com/bas-logist/polarroute/issues#303 is resolved
     "smooth_path": {"max_iteration_number": 1000, "minimum_difference": 0.0005},
     "smoothing_max_iterations": 100,
     "smoothing_merge_separation": 1e-3,

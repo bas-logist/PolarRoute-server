@@ -19,6 +19,7 @@ dependencies = [
     "django-celery-beat",
     "django-celery-results",
     "django-cors-headers",
+    "django-health-check[psutil,rabbitmq,celery]",
     "django-rest-framework",
     "django-taggit",
     "drf-spectacular[sidecar]",
@@ -30,9 +31,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/bas-amop/PolarRoute-server"
-Repository = "https://github.com/bas-amop/PolarRoute-server.git"
-Issues = "https://github.com/bas-amop/PolarRoute-server/issues"
+Homepage = "https://github.com/bas-logist/PolarRoute-server"
+Repository = "https://github.com/bas-logist/PolarRoute-server.git"
+Issues = "https://github.com/bas-logist/PolarRoute-server/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -58,13 +59,6 @@ dev = [
 prod = [
     "gunicorn"
 ]
-docs = [
-    "mkdocs",
-    "mkdocs-autoapi",
-    "mkdocs-include-markdown-plugin",
-    "mkdocstrings[python]",
-    "mkdocs-render-swagger-plugin",
-]
 build = [
     "build"
 ]
@@ -73,6 +67,16 @@ cov = [
 ]
 cov-badge = [
     "coverage-badge"
+]
+
+[dependency-groups]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocs-autoapi",
+    "mkdocs-include-markdown-plugin",
+    "mkdocstrings[python]",
+    "mkdocs-render-swagger-plugin",
 ]
 
 [project.scripts]

@@ -22,6 +22,38 @@ A number of helpful development tools are made available through the `Makefile`,
 
 **Important**: Please ensure all changes are included in `CHANGELOG.md` in a human-friendly format.
 
+## Debugging with docker compose
+
+To run using a debugger in e.g. VS Code, run with the additional compose file `compose.debug.yml` which adds some additional settings to enable this.
+
+Do so with: `docker compose -f compose.yml -f compose.debug.yml up`
+
+This will launch the containers, but the `app` service will stop until a debugger is attached.
+
+For VS Code, the launch config should look like:
+
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Dockerised Django",
+            "type": "debugpy",
+            "request": "attach",
+            "pathMappings": [
+                {
+                "localRoot": "${workspaceFolder}",
+                "remoteRoot": "/usr/src/app"
+                }
+            ],
+            "connect": {"host": "127.0.0.1", "port": 5678},
+        }
+    ]
+}
+```
+
+Run the debugger using this config to run the debugger listening to the debugging port configured.
+
 ## Release/Versioning
 
 Version numbers should be used in tagging commits on the `main` branch and reflected in the `pyproject.toml` file and should be of the form `v0.1.7` using the semantic versioning convention.

@@ -7,12 +7,12 @@ A route request script is available in this repo (`./request_route/request_route
 To obtain, either:
 
 + Clone this whole repo
-+ Download the file from its GitHub page here: https://github.com/bas-amop/PolarRoute-server/blob/main/request_route/route_request.py
++ Download the file from its GitHub page here: https://github.com/bas-logist/PolarRoute-server/blob/main/request_route/route_request.py
 
 This can be done with `wget` by running:
 
 ```
-wget https://raw.githubusercontent.com/bas-amop/PolarRoute-server/refs/heads/main/request_route/request_route.py
+wget https://raw.githubusercontent.com/bas-logist/PolarRoute-server/refs/heads/main/request_route/request_route.py
 ```
 
 To run, you'll just need python ~3.11 installed. Earlier versions of python may work, but are untested.

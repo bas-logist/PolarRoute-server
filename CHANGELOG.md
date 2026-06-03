@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `/health/` endpoint and `HEALTHCHECK` in the Docker container. 
 - Added `route_type` parameter to `evaluate_route`, allowing user to specify the route type used in `route_calc`.
 - Added `route_type` parameter to the route evaluation API endpoint and updated API schema.
 
@@ -17,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+ 
 ## 0.2.7 - 2025-12-22
 
 ### Added
