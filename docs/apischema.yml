@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: PolarRoute-Server
-  version: 0.2.7
+  version: 0.2.8.dev6+gc5ccc2e7e
   description: Backend server for serving PolarRoute and MeshiPhi assets
 paths:
   /api/evaluate_route:
@@ -785,6 +785,15 @@ components:
           type: integer
           nullable: true
           description: 'Optional: Custom mesh ID to use for evaluation.'
+        route_type:
+          allOf:
+          - $ref: '#/components/schemas/RouteTypeEnum'
+          default: smoothed
+          description: |-
+            Type of route calculation: 'dijkstra' or 'smoothed'. Defaults to 'smoothed'.
+
+            * `dijkstra` - dijkstra
+            * `smoothed` - smoothed
       required:
       - route
     RouteEvaluationResponse:
@@ -800,6 +809,14 @@ components:
       required:
       - evaluation_results
       - polarrouteserver-version
+    RouteTypeEnum:
+      enum:
+      - dijkstra
+      - smoothed
+      type: string
+      description: |-
+        * `dijkstra` - dijkstra
+        * `smoothed` - smoothed
     StatusEnum:
       enum:
       - PENDING

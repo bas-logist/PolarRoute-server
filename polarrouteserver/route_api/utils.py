@@ -1,12 +1,10 @@
 import hashlib
-import json
 import logging
-import os
-from tempfile import NamedTemporaryFile
 from typing import Union
 
 from django.conf import settings
 import haversine
+import pandas as pd
 from polar_route.route_calc import route_calc
 from polar_route.utils import convert_decimal_days
 
@@ -171,7 +169,7 @@ def calculate_md5(filename):
     return hash_md5.hexdigest()
 
 
-def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
+def evaluate_route(route_json: dict, mesh: Mesh, route_type: str = "smoothed") -> dict:
     """Run calculate_route method from PolarRoute to evaluate the fuel usage and travel time of a route.
 
     Args:
@@ -185,30 +183,45 @@ def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
     if route_json["features"][0].get("properties", None) is None:
         route_json["features"][0]["properties"] = {"from": "Start", "to": "End"}
 
-    # route_calc only supports files, write out both route and mesh as temporary files
-    route_file = NamedTemporaryFile(delete=False, suffix=".json")
-    with open(route_file.name, "w") as fp:
-        json.dump(route_json, fp)
-
-    mesh_file = NamedTemporaryFile(delete=False, suffix=".json")
-    with open(mesh_file.name, "w") as fp:
-        json.dump(mesh.json, fp)
-
     try:
-        calc_route = route_calc(route_file.name, mesh_file.name)
+        # Extract all coordinates from the route (not just start/end)
+        coordinates = route_json["features"][0]["geometry"]["coordinates"]
+
+        # Create DataFrame with all waypoints along the route
+        df_data = []
+        for i, coord in enumerate(coordinates):
+            df_data.append(
+                {
+                    "Lat": coord[1],  # lat
+                    "Long": coord[0],  # lon
+                    "Name": f"waypoint_{i}",
+                    "order": i,
+                    "id": 1,  # All waypoints belong to the same route/track
+                }
+            )
+
+        df = pd.DataFrame(df_data)
+
+        # Get start and end waypoint names
+        from_wp = "waypoint_0"
+        to_wp = f"waypoint_{len(coordinates)-1}"
+
+        # Use route_calc with the new API: (df, from_wp, to_wp, mesh, route_type)
+        calc_route = route_calc(
+            df=df, from_wp=from_wp, to_wp=to_wp, mesh=mesh.json, route_type=route_type
+        )
+
+        # Extract time and fuel information
         time_days = calc_route["features"][0]["properties"]["traveltime"][-1]
         time_str = convert_decimal_days(time_days)
         fuel = round(calc_route["features"][0]["properties"]["fuel"][-1], 2)
 
     except Exception as e:
-        logger.error(e)
+        logger.error(f"Error in evaluate_route: {type(e).__name__}: {e}")
+        import traceback
+
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         return None
-    finally:
-        for file in (route_file, mesh_file):
-            try:
-                os.remove(file.name)
-            except Exception as e:
-                logger.warning(f"{file} not removed due to {e}")
 
     return dict(
         route=calc_route, time_days=time_days, time_str=time_str, fuel_tonnes=fuel
