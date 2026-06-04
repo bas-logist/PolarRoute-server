@@ -1,0 +1,18 @@
+# used for production settings, values here override those in compose.yml when used with docker compose -f compose.yml -f compose.prod.yml <COMMAND>
+
+services:
+  app:
+    build:
+      context: .
+      target: prod
+    environment:
+      DJANGO_SETTINGS_MODULE: polarrouteserver.settings.docker.production
+      POLARROUTE_STATIC_ROOT: /usr/src/app/static
+    command: ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "polarrouteserver.wsgi:application", "--access-logfile", "-", "--error-logfile", "-"]
+
+  celery:
+    build:
+      context: .
+      target: prod
+    environment:
+      DJANGO_SETTINGS_MODULE: polarrouteserver.settings.docker.production
