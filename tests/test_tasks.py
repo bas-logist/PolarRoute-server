@@ -15,7 +15,7 @@ import yaml
 
 from polarrouteserver.celery import app
 from polarrouteserver.route_api.models import Mesh, Route
-from polarrouteserver.route_api.tasks import import_new_meshes, optimise_route
+from polarrouteserver.route_api.tasks import import_new_meshes, optimise_route, cleanup_routes, cleanup_meshes
 from polarrouteserver.route_api.utils import calculate_md5
 from .utils import add_test_mesh_to_db
 
@@ -230,3 +230,84 @@ class TestImportNewMeshes(TestCase):
 
         all_meshes2 = Mesh.objects.all()
         assert list(all_meshes) == list(all_meshes2)
+
+class TestRouteCleanup(TestCase):
+    
+    def test_settings_catch(self):
+        "Test that with default settings, CLEANUP_ROUTES=False, that on calling the task, deletion is prevented"
+        with pytest.raises(Exception):
+            cleanup_routes()
+    
+    def test_cleanup_routes(self):
+        self.mesh = add_test_mesh_to_db()
+        self.new_route = Route.objects.create(
+            start_lat=1.1, start_lon=1.1, end_lat=8.9, end_lon=8.9, mesh=self.mesh
+        )
+        self.new_route.calculated = datetime.now().replace(tzinfo=timezone.utc)
+        self.new_route.save()
+
+        self.old_route = Route.objects.create(
+            start_lat=1.1, start_lon=1.1, end_lat=8.9, end_lon=8.9, mesh=self.mesh
+        )
+        self.old_route.calculated = datetime.now().replace(tzinfo=timezone.utc) - timedelta(days=7)
+        self.old_route.save()
+
+        # start by checking number of routes in db
+        assert len(Route.objects.all()) == 2
+
+        # enable routes cleanup, but with threshold age higher than all the available routes
+        settings.CLEANUP_ROUTES = True
+        settings.CLEANUP_ROUTES_DAYS = 20
+        cleanup_routes()
+        assert len(Route.objects.all()) == 2
+
+        # set the threshold between our two routes, run cleanup and check that only one is left
+        settings.CLEANUP_ROUTES_DAYS = 5
+        cleanup_routes()
+        assert len(Route.objects.all()) == 1
+
+        # add another route to the db and protect it
+        self.old_route = Route.objects.create(
+            start_lat=1.1, start_lon=1.1, end_lat=8.9, end_lon=8.9, mesh=self.mesh, protect=True
+        )
+        self.old_route.calculated = datetime.now().replace(tzinfo=timezone.utc) - timedelta(days=7)
+        self.old_route.save()
+        assert len(Route.objects.all()) == 2
+        cleanup_routes()
+        assert len(Route.objects.all()) == 2
+
+class TestMeshCleanup(TestCase):
+    
+    def test_settings_catch(self):
+        "Test that with default settings, CLEANUP_MESHES=False, that on calling the task, deletion is prevented"
+        with pytest.raises(Exception):
+            cleanup_meshes()
+    
+    def test_cleanup_meshes(self):
+        self.new_mesh = add_test_mesh_to_db()
+        self.old_mesh = add_test_mesh_to_db()
+        self.old_mesh.created = datetime.now().replace(tzinfo=timezone.utc) - timedelta(days=7)
+        self.old_mesh.save()
+
+        # start by checking number of meshes in db
+        assert len(Mesh.objects.all()) == 2
+
+        # enable mesh cleanup, but with threshold age higher than all the available meshes
+        settings.CLEANUP_MESHES = True
+        settings.CLEANUP_MESHES_DAYS = 20
+        cleanup_meshes()
+        assert len(Mesh.objects.all()) == 2
+
+        # set the threshold between our two meshes, run cleanup and check that only one is left
+        settings.CLEANUP_MESHES_DAYS = 5
+        cleanup_meshes()
+        assert len(Mesh.objects.all()) == 1
+
+        # add another mesh to the db and protect it
+        self.old_mesh = add_test_mesh_to_db()
+        self.old_mesh.created = datetime.now().replace(tzinfo=timezone.utc) - timedelta(days=7)
+        self.old_mesh.protect = True
+        self.old_mesh.save()
+        assert len(Mesh.objects.all()) == 2
+        cleanup_meshes()
+        assert len(Mesh.objects.all()) == 2
