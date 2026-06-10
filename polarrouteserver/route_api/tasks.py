@@ -258,3 +258,35 @@ def import_new_meshes(self):
             )
 
     return meshes_added
+
+
+@app.task(bind=True)
+def cleanup_routes(self):
+    # catch any unexpected error where this task is called without the correct setting, this shouldn't happen, but protects against unintented use of this destructive method
+    if not settings.CLEANUP_ROUTES:
+        raise Exception(
+            "cleanup_routes has been executed but the CLEANUP_ROUTES setting is not True. Exiting."
+        )
+
+    time_threshold = timezone.now() - datetime.timedelta(
+        days=settings.CLEANUP_ROUTES_DAYS
+    )
+    routes_to_delete = Route.objects.filter(
+        calculated__lt=time_threshold, protect=False
+    )
+    routes_to_delete.delete()
+
+
+@app.task(bind=True)
+def cleanup_meshes(self):
+    # catch any unexpected error where this task is called without the correct setting, this shouldn't happen, but protects against unintented use of this destructive method
+    if not settings.CLEANUP_MESHES:
+        raise Exception(
+            "cleanup_meshes has been executed but the CLEANUP_MESHES setting is not True. Exiting."
+        )
+
+    time_threshold = timezone.now() - datetime.timedelta(
+        days=settings.CLEANUP_MESHES_DAYS
+    )
+    meshes_to_delete = Mesh.objects.filter(created__lt=time_threshold, protect=False)
+    meshes_to_delete.delete()
