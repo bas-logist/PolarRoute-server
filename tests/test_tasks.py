@@ -232,6 +232,11 @@ class TestImportNewMeshes(TestCase):
         assert list(all_meshes) == list(all_meshes2)
 
 class TestRouteCleanup(TestCase):
+
+    def tearDown(self):
+        # return these settings to default after tests are run to avoid settings leakage between tests
+        settings.CLEANUP_ROUTES = False
+        settings.CLEANUP_MESHES = False
     
     def test_settings_catch(self):
         "Test that with default settings, CLEANUP_ROUTES=False, that on calling the task, deletion is prevented"
@@ -277,6 +282,12 @@ class TestRouteCleanup(TestCase):
         assert len(Route.objects.all()) == 2
 
 class TestMeshCleanup(TestCase):
+
+    def tearDown(self):
+        # return these settings to default after tests are run to avoid settings leakage between tests
+        settings.CLEANUP_ROUTES = False
+        settings.CLEANUP_MESHES = False
+
     
     def test_settings_catch(self):
         "Test that with default settings, CLEANUP_MESHES=False, that on calling the task, deletion is prevented"
