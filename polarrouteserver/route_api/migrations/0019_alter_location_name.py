@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("route_api", "0016_alter_location_name"),
+        ("route_api", "0018_alter_route_tags"),
     ]
 
     operations = [

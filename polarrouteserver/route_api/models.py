@@ -35,7 +35,7 @@ class Mesh(models.Model):
         return abs(self.lat_max - self.lat_min) * abs(self.lon_max - self.lon_min)
 
     class Meta:
-        verbose_name_plural = "Meshes"
+        abstract = True
 
 
 class Vehicle(models.Model):

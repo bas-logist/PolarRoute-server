@@ -403,6 +403,7 @@ class TestRouteRequest(TestCase):
             "start_name": "Test Start",
             "end_name": "Test End",
             "tags": ["archive_test"],
+            "vehicle_type": "TEST_VESSEL",
         }
 
         request = self.factory.post(
@@ -432,6 +433,7 @@ class TestRouteRequest(TestCase):
             "start_lon": 0.2,
             "end_lat": 0.8,
             "end_lon": 0.8,
+            "vehicle_type": "TEST_VESSEL",
         }
 
         request = self.factory.post(
@@ -462,6 +464,7 @@ class TestRouteRequest(TestCase):
             "end_lat": 0.7,
             "end_lon": 0.7,
             "tags": "archive,experiment, test_tag ",  # Test comma separation and whitespace
+            "vehicle_type": "TEST_VESSEL",
         }
 
         request = self.factory.post(
@@ -496,6 +499,7 @@ class TestRouteRequest(TestCase):
             "end_lat": 0.5,
             "end_lon": 0.5,
             "tags": {"invalid": "dict"},  # Invalid type should result in no tags
+            "vehicle_type": "TEST_VESSEL",
         }
 
         request = self.factory.post(
@@ -804,19 +808,11 @@ class TestGetRecentRoutesAndMesh(TestCase):
         longer_than_24_hours = now - timedelta(hours=25)
         self.route1 = Route.objects.create(
             start_lat=0.0, start_lon=0.0, end_lat=0.0, end_lon=0.0, 
-<<<<<<< HEAD
             mesh=self.mesh, vehicle=self.vehicle, calculated=now
         )
         self.route2 = Route.objects.create(
             start_lat=1.0, start_lon=1.0, end_lat=1.0, end_lon=0.0, 
             mesh=self.mesh, vehicle=self.vehicle, calculated=now
-=======
-            mesh=self.mesh, calculated=now, requested=now,
-        )
-        self.route2 = Route.objects.create(
-            start_lat=1.0, start_lon=1.0, end_lat=1.0, end_lon=0.0, 
-            mesh=self.mesh, calculated=within_24_hours, requested=within_24_hours,
->>>>>>> main
         )
         self.route3 = Route.objects.create(
             start_lat=1.0, start_lon=1.0, end_lat=1.0, end_lon=0.0, 
