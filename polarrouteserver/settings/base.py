@@ -223,19 +223,7 @@ HEALTH_CHECKS = [
 # Routing settings (TODO: hardcoded, can / should these be exposed elsewhere?)
 WAYPOINT_DISTANCE_TOLERANCE = 1  # Nautical Miles
 
-# For now, vessel config is used in the pipeline to calculate a vessel mesh
-# VESSEL_CONFIG =  {
-#        "vessel_type": "SDA",
-#        "max_speed": 30,
-#        "unit": "km/hr",
-#        "beam": 10,
-#        "hull_type": "slender",
-#        "force_limit": 100000,
-#        "max_ice_conc": 80,
-#        "min_depth": 10
-# }
 base_routeplanner_config = {
-    "path_variables": ["fuel", "traveltime"],
     "vector_names": ["uC", "vC"],
     "zero_currents": False,
     "variable_speed": True,
@@ -248,8 +236,37 @@ base_routeplanner_config = {
     "smoothing_merge_separation": 1e-3,
     "smoothing_converged_sep": 1e-3,
 }
-TRAVELTIME_CONFIG = base_routeplanner_config | {"objective_function": "traveltime"}
-FUEL_CONFIG = base_routeplanner_config | {"objective_function": "fuel"}
+
+# Traveltime optimization
+TRAVELTIME_CONFIG = base_routeplanner_config | {
+    "objective_function": "traveltime",
+    "path_variables": ["traveltime"],
+}
+
+# Fuel optimization (for diesel/fuel-powered vessels)
+FUEL_CONFIG = base_routeplanner_config | {
+    "objective_function": "fuel",
+    "path_variables": ["fuel", "traveltime"],
+}
+
+# Battery optimization (for battery-powered vessels like Slocum, BoatyMcBoatface)
+BATTERY_CONFIG = base_routeplanner_config | {
+    "objective_function": "battery",
+    "path_variables": ["battery", "traveltime"],
+}
+
+# Vehicle energy source mapping
+# Maps vessel_type to energy source (fuel or battery)
+VEHICLE_ENERGY_SOURCES = {
+    # Traditional fuel-powered vessels
+    "SDA": "fuel",
+    # Battery-powered autonomous vehicles
+    "Slocum": "battery",
+    "BoatyMcBoatFace": "battery",
+}
+
+# Default energy source for unknown vehicles
+DEFAULT_ENERGY_SOURCE = "fuel"
 
 # dictionary relating user-friendly name of data source with loader value used in vessel mesh json
 EXPECTED_MESH_DATA_SOURCES = {

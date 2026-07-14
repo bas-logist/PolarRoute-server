@@ -26,7 +26,24 @@ To calculate a route, PolarRoute requires a mesh that covers the area of the sta
 
 For the time-being, meshes are calculated separately to PolarRoute-server, either with PolarRoute-pipeline or with MeshiPhi directly.
 
-The application takes **vessel** meshes, with the vessel transformation already applied.
+PolarRoute-server ingests two types of meshes:
+
+- **Environment Meshes**: Environmental data.
+- **Vehicle Meshes**: Environmental data + vessel performance information.
+
+PolarRoute-server automatically detects which type of mesh is being ingested (based on the presence/absence of vehicle information) and creates the appropriate database records.
+
+### How It Works
+
+1. **Detects mesh type**: Looks for `vessel_info` in the mesh config
+   - Has `vessel_info` → **Vehicle Mesh**
+   - No `vessel_info` → **Environment Mesh**
+
+2. **Creates database records**: 
+   - Vehicle meshes also create Vehicle records automatically
+   - Uses MD5 hash to avoid duplicates
+
+3. **Cleans data**: Fixes common issues like `null` values in ice data
 
 Meshes can be ingested into the database manually or automatically.
 
@@ -56,5 +73,7 @@ If the route optimisation fails, the next mesh in priority order is tried if the
 Before a route is calculated, a priority list of meshes is created by `polarrouteserver.route_api.utils.select_mesh`.
 
 It takes all of the meshes that contain the requested start and end coordinates and that were created on the latest date available out of those meshes and returns this list of meshes sorted from smallest to largest total area.
+
+The system will initially look for a `VehicleMesh` for the requested vehicle type. If not found, it will attempt to create one from an `EnvironmentMesh` and the vehicle type provided. It will then use the created VehicleMesh for route optimisation. 
 
 ## Troubleshooting

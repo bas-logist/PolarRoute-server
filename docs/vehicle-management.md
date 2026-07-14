@@ -101,4 +101,8 @@ Removing all vehicles in one go is not currently supported.
 
 ## Adding a vehicle to an environment mesh
 
-Coming soon.
+Vehicles are added to an `EnvironmentMesh` automatically, creating a `VehicleMesh`, if a route is requested with a vehicle type where a `VehicleMesh` is not already available for those coordinates.
+
+## Creating vehicles with mesh ingestion
+
+Vehicles are also created automatically (if they do not exist already), when a `VehicleMesh` is ingested into the database. This process is described in [mesh ingestion](how-polarroute-server-works.md#ingesting-meshes-into-the-database).

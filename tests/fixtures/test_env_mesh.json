@@ -1,0 +1,1 @@
+{"features": [{"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[[-45, 65], [-40, 65], [-40, 70], [-45, 70], [-45, 65]]]}, "properties": {"SIC": 0.5, "thickness": 1.0, "density": 900.0, "elevation": 10.0}}]}

@@ -35,7 +35,7 @@ class Mesh(models.Model):
         return abs(self.lat_max - self.lat_min) * abs(self.lon_max - self.lon_min)
 
     class Meta:
-        verbose_name_plural = "Meshes"
+        abstract = True
 
 
 class Vehicle(models.Model):
@@ -64,13 +64,29 @@ class Vehicle(models.Model):
     created_by = models.CharField(max_length=150, null=True)
 
 
+class EnvironmentMesh(Mesh):
+    class Meta:
+        verbose_name_plural = "Environment Meshes"
+
+
+class VehicleMesh(Mesh):
+    environment_mesh = models.ForeignKey(
+        EnvironmentMesh, on_delete=models.SET_NULL, null=True
+    )
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, null=True)
+
+    class Meta:
+        verbose_name_plural = "Vehicle Meshes"
+
+
 class Route(models.Model):
     "Represents a route."
 
     requested = models.DateTimeField(default=timezone.now)
     calculated = models.DateTimeField(null=True)
     info = models.JSONField(null=True)
-    mesh = models.ForeignKey(Mesh, on_delete=models.SET_NULL, null=True)
+    mesh = models.ForeignKey(VehicleMesh, on_delete=models.SET_NULL, null=True)
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.SET_NULL, null=True)
     start_lat = models.FloatField()
     start_lon = models.FloatField()
     end_lat = models.FloatField()

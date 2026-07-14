@@ -11,12 +11,9 @@ from django.utils import timezone
 from haversine import inverse_haversine, Unit, Direction
 import pytest
 
-from polarrouteserver.route_api.models import Mesh, Job, Route
-from polarrouteserver.route_api.utils import evaluate_route, route_exists, select_mesh, select_mesh_for_route_evaluation
-
-from polarrouteserver.route_api.models import Mesh, Route
-from polarrouteserver.route_api.utils import check_mesh_data, route_exists, select_mesh
-from .utils import add_test_mesh_to_db
+from polarrouteserver.route_api.models import EnvironmentMesh, VehicleMesh, Vehicle, Job, Route
+from polarrouteserver.route_api.utils import evaluate_route, route_exists, select_mesh, select_mesh_for_route_evaluation, check_mesh_data
+from .utils import add_test_environment_mesh_to_db, add_test_vehicle_mesh_to_db, create_test_vehicle
 
 class TestRouteExists(TestCase):
     "Test function for checking for existing routes"
@@ -24,7 +21,12 @@ class TestRouteExists(TestCase):
     def setUp(self):
         "Create a route in the test database"
 
-        self.mesh = add_test_mesh_to_db()
+        self.mesh = add_test_vehicle_mesh_to_db()
+        self.vehicle = self.mesh.vehicle
+
+        # Verify we're working with correct types
+        assert isinstance(self.mesh, VehicleMesh)
+        assert isinstance(self.vehicle, Vehicle)
 
         self.start_lat = 64.16
         self.start_lon = -21.99
@@ -37,7 +39,8 @@ class TestRouteExists(TestCase):
             start_lon=self.start_lon,
             end_lat=self.end_lat,
             end_lon=self.end_lon,
-            mesh=self.mesh
+            mesh=self.mesh,
+            vehicle=self.vehicle
         )
 
         self.job = Job.objects.create(id=uuid.uuid1(),route=self.route)
@@ -115,7 +118,8 @@ class TestRouteExists(TestCase):
             start_lon=in_tolerance_start[1],
             end_lat=in_tolerance_end[0],
             end_lon=in_tolerance_end[1],
-            mesh=self.mesh
+            mesh=self.mesh,
+            vehicle=self.vehicle
         )
 
         Job.objects.create(id=uuid.uuid1(), route=nearby_route)
@@ -158,7 +162,8 @@ class TestRouteExists(TestCase):
             start_lon=in_tolerance_start[1],
             end_lat=in_tolerance_end[0],
             end_lon=in_tolerance_end[1],
-            mesh=self.mesh
+            mesh=self.mesh,
+            vehicle=self.vehicle
         )
 
         Job.objects.create(id=uuid.uuid1(), route=closest_route)
@@ -183,7 +188,7 @@ class TestSelectMesh(TestCase):
     def setUp(self):
         # create some meshes in the database
 
-        self.southern_mesh = Mesh.objects.create(
+        self.southern_mesh = EnvironmentMesh.objects.create(
             name = "southern_test_mesh.vessel.json",
             md5 = hashlib.md5("dummy_hashable_string".encode('utf-8')).hexdigest(),
             meshiphi_version = "2.1.13",
@@ -213,7 +218,7 @@ class TestSelectMesh(TestCase):
         ) == None
 
     def test_smallest_mesh(self):
-        self.smallest_mesh = Mesh.objects.create(
+        self.smallest_mesh = EnvironmentMesh.objects.create(
             name = "smallest_test_mesh.vessel.json",
             md5 = hashlib.md5("dummy_hashable_string".encode('utf-8')).hexdigest(),
             meshiphi_version = "2.1.13",
@@ -226,7 +231,7 @@ class TestSelectMesh(TestCase):
             lon_max =    0.0,
         )
 
-        self.smaller_mesh = Mesh.objects.create(
+        self.smaller_mesh = EnvironmentMesh.objects.create(
             name = "smaller_test_mesh.vessel.json",
             md5 = hashlib.md5("dummy_hashable_string".encode('utf-8')).hexdigest(),
             meshiphi_version = "2.1.13",
@@ -252,23 +257,33 @@ class TestSelectMesh(TestCase):
 
     def test_select_mesh_for_route_evaluation(self):
 
-        self.mesh_for_evaluation = add_test_mesh_to_db()
+        self.mesh_for_evaluation = add_test_vehicle_mesh_to_db()
+        
+        # Verify we get a VehicleMesh
+        assert isinstance(self.mesh_for_evaluation, VehicleMesh)
 
         with open(settings.TEST_ROUTE_PATH) as fp:
             self.route_json = json.load(fp)
 
-        assert select_mesh_for_route_evaluation(self.route_json) == [self.mesh_for_evaluation]
+        # The function expects VehicleMesh, need to provide vehicle_type
+        vehicle_meshes = select_mesh_for_route_evaluation(self.route_json, "TEST_VESSEL")
+        assert vehicle_meshes == [self.mesh_for_evaluation]
+        
+        # Verify the returned meshes are VehicleMesh instances
+        for mesh in vehicle_meshes:
+            assert isinstance(mesh, VehicleMesh)
 
 @pytest.mark.django_db
 def test_evaluate_route():
-    add_test_mesh_to_db()
+    add_test_vehicle_mesh_to_db()
 
     with open(settings.TEST_ROUTE_PATH) as fp:
         route_json = json.load(fp)
 
-    mesh = select_mesh_for_route_evaluation(route_json)
+    mesh = select_mesh_for_route_evaluation(route_json, "TEST_VESSEL")
 
     assert mesh is not None
+    assert isinstance(mesh[0], VehicleMesh)
 
     result = evaluate_route(route_json, mesh[0])
     assert isinstance(result, dict)
@@ -277,7 +292,7 @@ def test_evaluate_route():
 class TestMeshDataMessage(TestCase):
 
     def test_no_missing_data_message(self):
-        mesh = add_test_mesh_to_db()
+        mesh = add_test_environment_mesh_to_db()
         mesh.json['config']['mesh_info']['data_sources'] = [
             {"loader": "GEBCO", "params": {"files": ["1"]}},
             {"loader": "amsr", "params": {"files": ["1", "2", "3"]}},
@@ -288,7 +303,7 @@ class TestMeshDataMessage(TestCase):
         assert check_mesh_data(mesh) == ""
 
     def test_missing_data_message(self):
-        mesh = add_test_mesh_to_db()
+        mesh = add_test_environment_mesh_to_db()
         mesh.json['config']['mesh_info']['data_sources'] = [
             {"loader": "amsr", "params": {"files": ["1", "2", "3"]}},
             {"loader": "duacs_currents", "params": {"files": ["1", "2", "3"]}},
@@ -298,7 +313,7 @@ class TestMeshDataMessage(TestCase):
         assert check_mesh_data(mesh) == "Warning: This mesh is missing data on the following parameters: bathymetry.\n"
 
     def test_unexpected_data_length_message(self):
-        mesh = add_test_mesh_to_db()
+        mesh = add_test_environment_mesh_to_db()
         mesh.json['config']['mesh_info']['data_sources'] = [
             {"loader": "GEBCO", "params": {"files": ["1"]}},
             {"loader": "amsr", "params": {"files": ["1", "2"]}},

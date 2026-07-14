@@ -1,0 +1,38 @@
+[
+  {
+    "model": "route_api.vehicle",
+    "fields": {
+       "vessel_type": "SDA",
+       "max_speed": 26.5,
+       "unit": "km/hr",
+       "beam": 24.0,
+       "hull_type": "slender",
+       "force_limit": 96634.5,
+       "max_ice_conc": 80,
+       "min_depth": 10,
+       "created_by": "fixture"
+    }
+  },
+  {
+    "model": "route_api.vehicle",
+    "fields": {
+      "vessel_type": "Slocum",
+      "max_speed": 1.25,
+      "unit": "km/hr",
+      "max_ice_conc": 10,
+      "min_depth": 10,
+      "created_by": "fixture"
+    }
+  },
+  {
+    "model": "route_api.vehicle",
+    "fields": {
+      "vessel_type": "BoatyMcBoatFace",
+      "max_speed": 3.6,
+      "unit": "km/hr",
+      "max_ice_conc": 10,
+      "min_depth": 10,
+      "created_by": "fixture"
+    }
+  }
+]

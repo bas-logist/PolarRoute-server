@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: PolarRoute-Server
-  version: 0.2.7
+  version: 0.2.8.dev6+gc5ccc2e7e
   description: Backend server for serving PolarRoute and MeshiPhi assets
 paths:
   /api/evaluate_route:
@@ -478,7 +478,10 @@ paths:
           description: Requested resource not found.
     delete:
       operationId: api_vehicle_delete_by_type
-      description: Delete vehicle by vessel_type
+      description: |-
+        Delete vehicle by vessel_type
+
+        Note: Vehicles with created_by='fixture' are protected from deletion.
       parameters:
       - in: path
         name: vessel_type
@@ -496,6 +499,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/NoContentResponse'
           description: No content available.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponse'
+          description: Bad request - invalid input data or malformed request.
         '404':
           content:
             application/json:
@@ -763,6 +772,9 @@ components:
           default: false
           description: If true, forces recalculation even if an existing route is
             found.
+        vehicle_type:
+          type: string
+          description: The type of vehicle to use for route calculation.
         tags:
           type: array
           items:
@@ -776,17 +788,22 @@ components:
       - end_lon
       - start_lat
       - start_lon
+      - vehicle_type
     RouteEvaluationRequest:
       type: object
       properties:
         route:
           description: The route JSON to evaluate.
+        vehicle_type:
+          type: string
+          description: Vehicle type for route evaluation (required).
         custom_mesh_id:
           type: integer
           nullable: true
           description: 'Optional: Custom mesh ID to use for evaluation.'
       required:
       - route
+      - vehicle_type
     RouteEvaluationResponse:
       type: object
       properties:

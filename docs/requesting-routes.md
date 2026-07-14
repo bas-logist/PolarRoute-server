@@ -76,7 +76,7 @@ Make a POST request to the `/api/route` endpoint to submit a route calculation j
 ```bash
 curl --header "Content-Type: application/json" \
   --request POST \
-  --data '{"start_lat":"-51.73","start_lon":"-57.71", "end_lat":"-54.03","end_lon":"-38.04"}' \
+  --data '{"start_lat":"-51.73","start_lon":"-57.71", "end_lat":"-54.03","end_lon":"-38.04", "vehicle_type":"SDA"}' \
   http://localhost:8000/api/route
 ```
 
