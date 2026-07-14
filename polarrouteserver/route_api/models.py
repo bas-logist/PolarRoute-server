@@ -1,15 +1,46 @@
+"""Representations of database objects with the Django object relational model."""
+
 import logging
 
 from celery.result import AsyncResult
 from django.db import models
 from django.utils import timezone
+from taggit.managers import TaggableManager
 
 from polarrouteserver.celery import app
 
 logger = logging.getLogger(__name__)
 
 
+class Mesh(models.Model):
+    "Mesh"
+
+    id = models.BigAutoField(primary_key=True)
+    meshiphi_version = models.CharField(max_length=60, null=True)
+    md5 = models.CharField(max_length=64)
+    valid_date_start = models.DateField()
+    valid_date_end = models.DateField()
+    created = models.DateTimeField()
+    lat_min = models.FloatField()
+    lat_max = models.FloatField()
+    lon_min = models.FloatField()
+    lon_max = models.FloatField()
+    json = models.JSONField(null=True)
+    name = models.CharField(max_length=150, null=True)
+
+    @property
+    def size(self) -> float:
+        """Computes a metric for the size of a mesh."""
+
+        return abs(self.lat_max - self.lat_min) * abs(self.lon_max - self.lon_min)
+
+    class Meta:
+        verbose_name_plural = "Meshes"
+
+
 class Vehicle(models.Model):
+    "Vehicle objects"
+
     # Required properties
     vessel_type = models.CharField(
         max_length=150, default=None, unique=True, primary_key=True
@@ -33,33 +64,6 @@ class Vehicle(models.Model):
     created_by = models.CharField(max_length=150, null=True)
 
 
-class Mesh(models.Model):
-    """Abstract base class for meshes."""
-
-    id = models.BigAutoField(primary_key=True)
-    meshiphi_version = models.CharField(max_length=60, null=True)
-    md5 = models.CharField(max_length=64)
-    valid_date_start = models.DateField()
-    valid_date_end = models.DateField()
-    created = models.DateTimeField()
-    lat_min = models.FloatField()
-    lat_max = models.FloatField()
-    lon_min = models.FloatField()
-    lon_max = models.FloatField()
-    json = models.JSONField(null=True)
-    name = models.CharField(max_length=150, null=True)
-
-    @property
-    def size(self) -> float:
-        """Computes a metric for the size of a mesh."""
-
-        return abs(self.lat_max - self.lat_min) * abs(self.lon_max - self.lon_min)
-
-    class Meta:
-        abstract = True
-        verbose_name_plural = "Meshes"
-
-
 class EnvironmentMesh(Mesh):
     class Meta:
         verbose_name_plural = "Environment Meshes"
@@ -76,6 +80,8 @@ class VehicleMesh(Mesh):
 
 
 class Route(models.Model):
+    "Represents a route."
+
     requested = models.DateTimeField(default=timezone.now)
     calculated = models.DateTimeField(null=True)
     info = models.JSONField(null=True)
@@ -90,6 +96,7 @@ class Route(models.Model):
     json = models.JSONField(null=True)
     json_unsmoothed = models.JSONField(null=True)
     polar_route_version = models.CharField(max_length=60, null=True)
+    tags = TaggableManager(blank=True, help_text="Tags for route")
 
 
 class Job(models.Model):

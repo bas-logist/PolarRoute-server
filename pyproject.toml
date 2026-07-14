@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 61.0"]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -11,7 +11,7 @@ authors = [
 description = "Backend server for serving PolarRoute and MeshiPhi assets and managing their calcuation using Django & Celery."
 readme = "README.md"
 license = {file = "LICENSE"}
-version = "0.2.4"
+dynamic = ["version"]
 requires-python = ">= 3.10"
 dependencies = [
     "celery",
@@ -19,7 +19,9 @@ dependencies = [
     "django-celery-beat",
     "django-celery-results",
     "django-cors-headers",
+    "django-health-check[psutil,rabbitmq,celery]",
     "django-rest-framework",
+    "django-taggit",
     "drf-spectacular[sidecar]",
     "haversine",
     "polar-route @ git+https://github.com/antarctica/PolarRoute.git",
@@ -29,13 +31,16 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/bas-amop/PolarRoute-server"
-Repository = "https://github.com/bas-amop/PolarRoute-server.git"
-Issues = "https://github.com/bas-amop/PolarRoute-server/issues"
+Homepage = "https://github.com/bas-logist/PolarRoute-server"
+Repository = "https://github.com/bas-logist/PolarRoute-server.git"
+Issues = "https://github.com/bas-logist/PolarRoute-server/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
 exclude = ["tests*"]
+
+[tool.setuptools_scm]
+version_file = "polarrouteserver/_version.py"
 
 [tool.setuptools.exclude-package-data]
 polarrouteserver = [
@@ -51,16 +56,6 @@ dev = [
     "pytest-django",
     "ruff",
 ]
-prod = [
-    "gunicorn"
-]
-docs = [
-    "mkdocs",
-    "mkdocs-autoapi",
-    "mkdocs-include-markdown-plugin",
-    "mkdocstrings[python]",
-    "mkdocs-render-swagger-plugin",
-]
 build = [
     "build"
 ]
@@ -69,6 +64,20 @@ cov = [
 ]
 cov-badge = [
     "coverage-badge"
+]
+
+[dependency-groups]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocs-autoapi",
+    "mkdocs-include-markdown-plugin",
+    "mkdocstrings[python]",
+    "mkdocs-render-swagger-plugin",
+]
+production = [
+    "gunicorn",
+    "whitenoise",
 ]
 
 [project.scripts]

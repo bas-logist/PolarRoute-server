@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: PolarRoute-Server
-  version: 0.2.4
+  version: 0.2.8.dev6+gc5ccc2e7e
   description: Backend server for serving PolarRoute and MeshiPhi assets
 paths:
   /api/evaluate_route:
@@ -775,6 +775,14 @@ components:
         vehicle_type:
           type: string
           description: The type of vehicle to use for route calculation.
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          nullable: true
+          description: Optional tags for route (e.g., ['archive', 'SD056']). Can also
+            accept a single string or comma-separated string.
       required:
       - end_lat
       - end_lon

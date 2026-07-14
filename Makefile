@@ -164,9 +164,6 @@ prep-release: ## runs update-pkg-version, (re)builds the apischema, preps the ch
 		exit 1; \
 	fi
 
-	@echo "...Updating pyproject.toml..."
-	@sed -i "s/^version = \".*\"/version = \"$(version)\"/" pyproject.toml
-
 	@echo "...Updating docs/apischema.yml..."
 	@sed -i "s/version: .*/version: $(version)/" docs/apischema.yml
 

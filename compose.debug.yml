@@ -1,0 +1,10 @@
+# used for debugging, values here override those in compose.yml when used with docker compose -f compose.yml -f compose.debug.yml <COMMAND>
+# see developer documentation for more detail
+
+services:
+  app:
+    ports:
+      - 5678:5678
+    command: >
+      python -m debugpy --listen 0.0.0.0:5678 --wait-for-client
+      manage.py runserver 0.0.0.0:8000 --noreload

@@ -5,7 +5,7 @@
   },
   {
     "model": "route_api.location",
-    "fields": { "id": 2, "name": "Falklands", "lat": -51.731, "lon": -57.706 }
+    "fields": { "id": 2, "name": "Mare Harbour, Falklands", "lat": -51.902, "lon": -58.494 } 
   },
   {
     "model": "route_api.location",

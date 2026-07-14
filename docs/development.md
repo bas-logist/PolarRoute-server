@@ -22,13 +22,45 @@ A number of helpful development tools are made available through the `Makefile`,
 
 **Important**: Please ensure all changes are included in `CHANGELOG.md` in a human-friendly format.
 
+## Debugging with docker compose
+
+To run using a debugger in e.g. VS Code, run with the additional compose file `compose.debug.yml` which adds some additional settings to enable this.
+
+Do so with: `docker compose -f compose.yml -f compose.debug.yml up`
+
+This will launch the containers, but the `app` service will stop until a debugger is attached.
+
+For VS Code, the launch config should look like:
+
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Dockerised Django",
+            "type": "debugpy",
+            "request": "attach",
+            "pathMappings": [
+                {
+                "localRoot": "${workspaceFolder}",
+                "remoteRoot": "/usr/src/app"
+                }
+            ],
+            "connect": {"host": "127.0.0.1", "port": 5678},
+        }
+    ]
+}
+```
+
+Run the debugger using this config to run the debugger listening to the debugging port configured.
+
 ## Release/Versioning
 
 Version numbers should be used in tagging commits on the `main` branch and reflected in the `pyproject.toml` file and should be of the form `v0.1.7` using the semantic versioning convention.
 
-The `Unreleased` section of `CHANGELOG.md` should be amended to the new version number.
+**Note on version numbers**: Setuptools-scm requires version numbers that begin with a `v` and setuptools requires [PEP 440-compliant version numbers](https://peps.python.org/pep-0440/), e.g. `v0.1.7`, or for non release versions: `v0.1.7a1` for alphas, `v0.1.7rc1` for release candidates. Installing the package will fail if tags have version numbers deviating from this format.
 
-Release preparation (i.e. updating version numbers in `CHANGELOG.md`, `pyproject.toml` and `apischema.yml`) can be done automatically with `make prep-release version=<VERSION-NUMBER>` (without the 'v'). Note that this does not rebuild the API schema, just changes the version number.
+Release preparation (i.e. updating version numbers in `CHANGELOG.md` and `apischema.yml`) can be done automatically with `make prep-release version=<VERSION-NUMBER>` (without the 'v'). Note that this does not rebuild the API schema, just changes the version number.
 
 ## Building & deploying the documentation
 
