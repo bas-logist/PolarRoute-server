@@ -3,6 +3,8 @@ services:
     build:
       context: .
       target: dev
+      tags:
+         - polarrouteserver:dev
     ports:
       - 8000:8000
     environment:
@@ -46,6 +48,7 @@ services:
       POLARROUTE_MESH_DIR: /usr/src/app/mesh
       POLARROUTE_DB_HOST: db
       POLARROUTE_DB_PORT: 5432
+      POLARROUTE_STATIC_ROOT: /usr/src/app/static
     command: ["celery", "-A", "polarrouteserver", "worker", "--loglevel=info"]
     volumes:
       - ./polarrouteserver:/usr/src/app/polarrouteserver

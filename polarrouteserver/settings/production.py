@@ -7,6 +7,8 @@ from .base import *
 
 logger = logging.getLogger(__name__)
 
+CELERY_BEAT_SCHEDULE = {}
+
 if MESH_DIR is None:
     pass
     # disabling these warnings in settings modules until we can resolve https://github.com/bas-logist/PolarRoute-server/issues/49
@@ -21,13 +23,24 @@ else:
         #     f"POLARROUTE_MESH_METADATA_DIR not set. Using POLARROUTE_MESH_DIR as POLARROUTE_MESH_METADATA_DIR: {MESH_DIR}"
         # )
 
-    CELERY_BEAT_SCHEDULE = {
-        "import_meshes": {
-            "task": "polarrouteserver.route_api.tasks.import_new_meshes",
-            "schedule": crontab(minute="*/10"),
-        },
+    CELERY_BEAT_SCHEDULE["import_meshes"] = {
+        "task": "polarrouteserver.route_api.tasks.import_new_meshes",
+        "schedule": crontab(minute="*/10"),
     }
 
+if CLEANUP_ROUTES:
+    CELERY_BEAT_SCHEDULE["cleanup_routes"] = {
+        "task": "cleanup_routes",
+        "schedule": crontab(minute=0, hour=2),
+    }
+
+if CLEANUP_MESHES:
+    CELERY_BEAT_SCHEDULE["cleanup_meshes"] = {
+        "task": "cleanup_meshes",
+        "schedule": crontab(minute=0, hour=3),
+    }
+
+# Logging settings
 polarroute_log_file_name = os.getenv("POLARROUTE_LOG_FILE_NAME", "polarrouteserver.log")
 polarroute_log_dir = os.getenv("POLARROUTE_LOG_DIR", None)
 if polarroute_log_dir is None:

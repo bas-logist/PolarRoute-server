@@ -1,39 +1,6 @@
-from celery.schedules import crontab
-
-from polarrouteserver.settings.base import *
+from polarrouteserver.settings.production import *
 
 logger = logging.getLogger(__name__)
-
-if MESH_DIR is None:
-    pass
-    # disabling these warnings in settings modules until we can resolve https://github.com/bas-amop/PolarRoute-server/issues/49
-    # logger.warning(
-    #     "POLARROUTE_MESH_DIR or POLARROUTE_MESH_METADATA_DIR not set, both are required to ingest new meshes into database.\n\
-    #                No new meshes will be automatically ingested."
-    # )
-else:
-    if MESH_METADATA_DIR is None:
-        MESH_METADATA_DIR = MESH_DIR
-        # logger.warning(
-        #     f"POLARROUTE_MESH_METADATA_DIR not set. Using POLARROUTE_MESH_DIR as POLARROUTE_MESH_METADATA_DIR: {MESH_DIR}"
-        # )
-
-    CELERY_BEAT_SCHEDULE = {
-        "import_meshes": {
-            "task": "polarrouteserver.route_api.tasks.import_new_meshes",
-            "schedule": crontab(minute="*/10"),
-        },
-    }
-
-# whitenoise for static file serving, needs to be in specific middleware position https://whitenoise.readthedocs.io/en/stable/django.html
-MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
-
-STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
-
 
 LOGLEVEL = os.environ.get("POLARROUTE_LOG_LEVEL", "INFO").upper()
 
