@@ -1664,6 +1664,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../autoapi/build/lib/polarrouteserver/route_api/migrations/0019_mesh_protect_route_protect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0019_mesh_protect_route_protect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3093,6 +3121,17 @@
 <li><code>POLARROUTE_LOG_LEVEL</code> - sets the logging level from standard log level options: INFO, DEBUG, ERROR, WARNING etc. (Default: <code>INFO</code>)</li>
 <li><code>POLARROUTE_LOG_DIR</code> - sets the output directory for logs. By default only used in production settings environment.</li>
 <li><code>POLARROUTE_STATIC_ROOT</code> - the path to directory used for static file serving in production, e.g. <code>"/var/www/example.com/static/"</code> (Default: <code>None</code>) Note this is only used for the admin panel in this application.</li>
+<li>Automated database cleanup settings, only active for <code>DJANGO_SETTINGS_MODULE</code> production values e.g. <code>polarrouteserver.settings.production</code>:</li>
+<li>Route cleanup, runs once per day by default, at 02:00UTC<ul>
+<li><code>POLARROUTE_CLEANUP_ROUTES</code> - set to <code>True</code> to enable automated cleanup (delete) process for routes older than <code>POLARROUTE_CLEANUP_ROUTES_DAYS</code>. (Default: False)</li>
+<li><code>POLARROUTE_CLEANUP_ROUTES_DAYS</code> - if <code>POLARROUTE_CLEANUP_ROUTES</code> is <code>True</code>, routes older than this value are deleted. (Default: 365)</li>
+</ul>
+</li>
+<li>Mesh cleanup, runs once per day by default, at 03:00UTC<ul>
+<li><code>POLARROUTE_CLEANUP_MESHES</code> - set to <code>True</code> to enable automated cleanup (delete) process for meshes older than <code>POLARROUTE_CLEANUP_ROUTES_DAYS</code>. (Default: False)</li>
+<li><code>POLARROUTE_CLEANUP_MESHES_DAYS</code> - if <code>POLARROUTE_CLEANUP_ROUTES</code> is <code>True</code>, meshes older than this value are deleted. (Default: 365)</li>
+</ul>
+</li>
 </ul>
 <h2 id="database-settings">Database settings<a class="headerlink" href="#database-settings" title="Permanent link">&para;</a></h2>
 <ul>
