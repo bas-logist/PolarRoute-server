@@ -20,6 +20,12 @@ BASE_DIR = os.getenv("POLARROUTE_BASE_DIR", os.getcwd())
 MESH_DIR = os.getenv("POLARROUTE_MESH_DIR", None)
 MESH_METADATA_DIR = os.getenv("POLARROUTE_MESH_METADATA_DIR", None)
 
+# Automated cleanup settings
+CLEANUP_ROUTES = os.getenv("POLARROUTE_CLEANUP_ROUTES", False)
+CLEANUP_ROUTES_DAYS = os.getenv("POLARROUTE_CLEANUP_ROUTES_DAYS", 365)
+CLEANUP_MESHES = os.getenv("POLARROUTE_CLEANUP_MESHES", False)
+CLEANUP_MESHES_DAYS = os.getenv("POLARROUTE_CLEANUP_MESHES_DAYS", 365)
+
 # FIXTURE_DIRS = []
 
 # NOTE: set this in production
@@ -74,9 +80,9 @@ CELERY_LOGGING = {
         },
     },
     "loggers": {
-        "celery": {"handlers": ["celery"], "level": "INFO", "propagate": False},
+        "celery": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
-    "root": {"handlers": ["default"], "level": "DEBUG"},
+    "root": {"handlers": ["console"], "level": "DEBUG"},
 }
 
 # Application definition
@@ -213,7 +219,6 @@ HEALTH_CHECKS = [
     "health_check.DNS",
     "health_check.Database",
     "health_check.Storage",
-    "health_check.contrib.psutil.Disk",
     "health_check.contrib.celery.Ping",
     (
         "health_check.contrib.rabbitmq.RabbitMQ",

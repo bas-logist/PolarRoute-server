@@ -22,6 +22,13 @@ The following are inherited from Django and more information can be found on the
 - `POLARROUTE_LOG_LEVEL` - sets the logging level from standard log level options: INFO, DEBUG, ERROR, WARNING etc. (Default: `INFO`)
 - `POLARROUTE_LOG_DIR` - sets the output directory for logs. By default only used in production settings environment.
 - `POLARROUTE_STATIC_ROOT` - the path to directory used for static file serving in production, e.g. `"/var/www/example.com/static/"` (Default: `None`) Note this is only used for the admin panel in this application.
+- Automated database cleanup settings, only active for `DJANGO_SETTINGS_MODULE` production values e.g. `polarrouteserver.settings.production`:
+  - Route cleanup, runs once per day by default, at 02:00UTC
+    - `POLARROUTE_CLEANUP_ROUTES` - set to `True` to enable automated cleanup (delete) process for routes older than `POLARROUTE_CLEANUP_ROUTES_DAYS`. (Default: False)
+    - `POLARROUTE_CLEANUP_ROUTES_DAYS` - if `POLARROUTE_CLEANUP_ROUTES` is `True`, routes older than this value are deleted. (Default: 365)
+  - Mesh cleanup, runs once per day by default, at 03:00UTC
+    - `POLARROUTE_CLEANUP_MESHES` - set to `True` to enable automated cleanup (delete) process for meshes older than `POLARROUTE_CLEANUP_ROUTES_DAYS`. (Default: False)
+    - `POLARROUTE_CLEANUP_MESHES_DAYS` - if `POLARROUTE_CLEANUP_ROUTES` is `True`, meshes older than this value are deleted. (Default: 365)
 
 ## Database settings
 

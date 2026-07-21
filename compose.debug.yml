@@ -1,3 +1,6 @@
+# used for debugging, values here override those in compose.yml when used with docker compose -f compose.yml -f compose.debug.yml <COMMAND>
+# see developer documentation for more detail
+
 services:
   app:
     ports:

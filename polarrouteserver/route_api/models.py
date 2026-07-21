@@ -27,6 +27,10 @@ class Mesh(models.Model):
     lon_max = models.FloatField()
     json = models.JSONField(null=True)
     name = models.CharField(max_length=150, null=True)
+    protect = models.BooleanField(
+        default=False,
+        help_text="Set to True to protect from automated deletion if POLARROUTE_CLEANUP_MESHES is enabled.",
+    )
 
     @property
     def size(self) -> float:
@@ -81,6 +85,10 @@ class Route(models.Model):
     json_unsmoothed = models.JSONField(null=True)
     polar_route_version = models.CharField(max_length=60, null=True)
     tags = TaggableManager(blank=True, help_text="Tags for route")
+    protect = models.BooleanField(
+        default=False,
+        help_text="Set to True to protect from automated deletion if POLARROUTE_CLEANUP_ROUTES is enabled.",
+    )
 
 
 class Job(models.Model):

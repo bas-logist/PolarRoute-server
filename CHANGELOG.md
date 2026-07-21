@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated `evaluate_route` to call `route_calc` using keyword arguments.
 - Restricted `polar-route` dependency to `>=1.1.10`.
+- Docker production and development settings modules.
+- `compose.prod.yml` for modifying the compose config for production.
+- Re-worked docker container to create a production build-stage.
+- Added static file collection to the docker entrypoint script.
  
 ## 0.2.7 - 2025-12-22
 
