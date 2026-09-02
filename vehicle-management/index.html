@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="https://cdn.web.bas.ac.uk/bas-style-kit/0.7.3/img/favicon/favicon-16x16.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -3229,18 +3229,18 @@
 <h2 id="creating-vehicles">Creating vehicles<a class="headerlink" href="#creating-vehicles" title="Permanent link">&para;</a></h2>
 <p>To request a vehicle to be added to the database, make a POST request to the <code>/api/vehicle</code> endpoint,
 for example with the following CURL:</p>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--request<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--data<span class="w"> </span><span class="s1">&#39;{</span>
-<span class="s1">       &quot;vessel_type&quot;: &quot;SDA&quot;,</span>
-<span class="s1">       &quot;max_speed&quot;: 26.5,</span>
-<span class="s1">       &quot;unit&quot;: &quot;km/hr&quot;,</span>
-<span class="s1">       &quot;beam&quot;: 24.0,</span>
-<span class="s1">       &quot;hull_type&quot;: &quot;slender&quot;,</span>
-<span class="s1">       &quot;force_limit&quot;: 96634.5,</span>
-<span class="s1">       &quot;max_ice_conc&quot;: 80,</span>
-<span class="s1">       &quot;min_depth&quot;: 10 </span>
-<span class="s1">    }&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--data<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">       "vessel_type": "SDA",</span>
+<span class="s1">       "max_speed": 26.5,</span>
+<span class="s1">       "unit": "km/hr",</span>
+<span class="s1">       "beam": 24.0,</span>
+<span class="s1">       "hull_type": "slender",</span>
+<span class="s1">       "force_limit": 96634.5,</span>
+<span class="s1">       "max_ice_conc": 80,</span>
+<span class="s1">       "min_depth": 10 </span>
+<span class="s1">    }'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8000/api/vehicle
 </code></pre></div>
 <p>This will create a vehicle of <code>vessel_type</code> "SDA" in the database. Note that <code>vessel_type</code> is unique,
@@ -3249,19 +3249,19 @@ and any subsequent request to create the same vessel type will result in an erro
 <p>Should you wish to update a <code>vessel_type</code>'s properties after creation, you can do so using the
 <code>force_properties</code> argument in your request.</p>
 <p>Let's say we actually wanted to display the speed in knots:</p>
-<p><div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<p><div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--request<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--data<span class="w"> </span><span class="s1">&#39;{</span>
-<span class="s1">      &quot;vessel_type&quot;: &quot;SDA&quot;,</span>
-<span class="s1">      &quot;max_speed&quot;: 14.3,</span>
-<span class="s1">      &quot;unit&quot;: &quot;knots&quot;,</span>
-<span class="s1">      &quot;beam&quot;: 24.0,</span>
-<span class="s1">      &quot;hull_type&quot;: &quot;slender&quot;,</span>
-<span class="s1">      &quot;force_limit&quot;: 96634.5,</span>
-<span class="s1">      &quot;max_ice_conc&quot;: 80,</span>
-<span class="s1">      &quot;min_depth&quot;: 10,</span>
-<span class="s1">      &quot;force_properties&quot;:&quot;true&quot;</span>
-<span class="s1">    }&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--data<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">      "vessel_type": "SDA",</span>
+<span class="s1">      "max_speed": 14.3,</span>
+<span class="s1">      "unit": "knots",</span>
+<span class="s1">      "beam": 24.0,</span>
+<span class="s1">      "hull_type": "slender",</span>
+<span class="s1">      "force_limit": 96634.5,</span>
+<span class="s1">      "max_ice_conc": 80,</span>
+<span class="s1">      "min_depth": 10,</span>
+<span class="s1">      "force_properties":"true"</span>
+<span class="s1">    }'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8000/api/vehicle
 </code></pre></div>
 With <code>"force_properties"</code> set to <code>"true"</code>, the request will be accepted and the properties for "SDA"
@@ -3269,7 +3269,7 @@ will be updated.</p>
 <h2 id="requesting-a-list-of-all-available-vehicles">Requesting a list of all available vehicles<a class="headerlink" href="#requesting-a-list-of-all-available-vehicles" title="Permanent link">&para;</a></h2>
 <p>To request a list of all available vehicles in the database, you can make a GET request to the
 <code>api/vehicle/available</code> endpoint:</p>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--request<span class="w"> </span>GET<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8000/api/vehicle/available
 </code></pre></div>
@@ -3277,21 +3277,21 @@ will be updated.</p>
 <h3 id="requesting-a-specific-vehicle">Requesting a specific vehicle<a class="headerlink" href="#requesting-a-specific-vehicle" title="Permanent link">&para;</a></h3>
 <p>To request a specific vehicle to be returned, you can make a GET request to the <code>api/vehicle</code>
 endpoint, adding the <code>vessel_type</code> to the end of the endpoint, for example <code>api/vehicle/SDA</code>:</p>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--request<span class="w"> </span>GET<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8000/api/vehicle/SDA/
 </code></pre></div>
 <h3 id="requesting-all-vehicles">Requesting all vehicles<a class="headerlink" href="#requesting-all-vehicles" title="Permanent link">&para;</a></h3>
 <p>If you make a GET request to <code>api/vehicle</code> without specifying the <code>vessel_type</code>, all vehicles will
 be returned.</p>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--request<span class="w"> </span>GET<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8000/api/vehicle
 </code></pre></div>
 <h2 id="deleting-a-vehicle">Deleting a vehicle<a class="headerlink" href="#deleting-a-vehicle" title="Permanent link">&para;</a></h2>
 <p>To request a vehicle to be removed from the database, you can make a DELETE request to <code>api/vehicle</code>,
 specifying the <code>vessel_type</code> in the URL, just as with specific vehicle GET requests, <code>api/vehicle/SDA</code>:</p>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--request<span class="w"> </span>DELETE<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8000/api/vehicle/SDA/
 </code></pre></div>
@@ -3354,7 +3354,7 @@ specifying the <code>vessel_type</code> in the URL, just as with specific vehicl
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="https://cdn.web.bas.ac.uk/bas-style-kit/0.7.3/img/favicon/favicon-16x16.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -3234,7 +3234,7 @@ $<span class="w"> </span>python<span class="w"> </span>request_route.py<span cla
 
 usage:<span class="w"> </span>request_route.py<span class="w"> </span><span class="o">[</span>-h<span class="o">]</span><span class="w"> </span><span class="o">[</span>-u<span class="w"> </span>URL<span class="o">]</span><span class="w"> </span>-s<span class="w"> </span><span class="o">[</span>START<span class="o">]</span><span class="w"> </span>-e<span class="w"> </span><span class="o">[</span>END<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span><span class="o">[</span>DELAY<span class="o">]]</span><span class="w"> </span><span class="o">[</span>-n<span class="w"> </span><span class="o">[</span>REQUESTS<span class="o">]]</span><span class="w"> </span><span class="o">[</span>-m<span class="w"> </span><span class="o">[</span>MESHID<span class="o">]]</span><span class="w"> </span><span class="o">[</span>-f<span class="o">]</span><span class="w"> </span><span class="o">[</span>-o<span class="w"> </span><span class="o">[</span>OUTPUT<span class="o">]]</span>
 
-Requests<span class="w"> </span>a<span class="w"> </span>route<span class="w"> </span>from<span class="w"> </span>polarRouteServer,<span class="w"> </span>monitors<span class="w"> </span>job<span class="w"> </span>status<span class="w"> </span><span class="k">until</span><span class="w"> </span>complete,<span class="w"> </span><span class="k">then</span><span class="w"> </span>retrieves<span class="w"> </span>the<span class="w"> </span>route<span class="w"> </span>data.<span class="w"> </span>Specify<span class="w"> </span>start<span class="w"> </span>and<span class="w"> </span>end<span class="w"> </span>points<span class="w"> </span>by<span class="w"> </span>coordinates<span class="w"> </span>or<span class="w"> </span>from<span class="w"> </span>one<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>standard<span class="w"> </span>locations:<span class="w"> </span><span class="o">[</span><span class="s1">&#39;bird&#39;</span>,<span class="w"> </span><span class="s1">&#39;falklands&#39;</span>,<span class="w"> </span><span class="s1">&#39;halley&#39;</span>,<span class="w"> </span><span class="s1">&#39;rothera&#39;</span>,<span class="w"> </span><span class="s1">&#39;kep&#39;</span>,<span class="w"> </span><span class="s1">&#39;signy&#39;</span>,<span class="w"> </span><span class="s1">&#39;nyalesund&#39;</span>,<span class="w"> </span><span class="s1">&#39;harwich&#39;</span>,<span class="w"> </span><span class="s1">&#39;rosyth&#39;</span><span class="o">]</span>
+Requests<span class="w"> </span>a<span class="w"> </span>route<span class="w"> </span>from<span class="w"> </span>polarRouteServer,<span class="w"> </span>monitors<span class="w"> </span>job<span class="w"> </span>status<span class="w"> </span><span class="k">until</span><span class="w"> </span>complete,<span class="w"> </span><span class="k">then</span><span class="w"> </span>retrieves<span class="w"> </span>the<span class="w"> </span>route<span class="w"> </span>data.<span class="w"> </span>Specify<span class="w"> </span>start<span class="w"> </span>and<span class="w"> </span>end<span class="w"> </span>points<span class="w"> </span>by<span class="w"> </span>coordinates<span class="w"> </span>or<span class="w"> </span>from<span class="w"> </span>one<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>standard<span class="w"> </span>locations:<span class="w"> </span><span class="o">[</span><span class="s1">'bird'</span>,<span class="w"> </span><span class="s1">'falklands'</span>,<span class="w"> </span><span class="s1">'halley'</span>,<span class="w"> </span><span class="s1">'rothera'</span>,<span class="w"> </span><span class="s1">'kep'</span>,<span class="w"> </span><span class="s1">'signy'</span>,<span class="w"> </span><span class="s1">'nyalesund'</span>,<span class="w"> </span><span class="s1">'harwich'</span>,<span class="w"> </span><span class="s1">'rosyth'</span><span class="o">]</span>
 
 options:
 <span class="w">  </span>-h,<span class="w"> </span>--help<span class="w">            </span>show<span class="w"> </span>this<span class="w"> </span><span class="nb">help</span><span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span><span class="nb">exit</span>
@@ -3265,9 +3265,9 @@ options:
 <p>The route request workflow consists of three steps:</p>
 <h3 id="1-submit-route-request">1. Submit Route Request<a class="headerlink" href="#1-submit-route-request" title="Permanent link">&para;</a></h3>
 <p>Make a POST request to the <code>/api/route</code> endpoint to submit a route calculation job:</p>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--request<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--data<span class="w"> </span><span class="s1">&#39;{&quot;start_lat&quot;:&quot;-51.73&quot;,&quot;start_lon&quot;:&quot;-57.71&quot;, &quot;end_lat&quot;:&quot;-54.03&quot;,&quot;end_lon&quot;:&quot;-38.04&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--data<span class="w"> </span><span class="s1">'{"start_lat":"-51.73","start_lon":"-57.71", "end_lat":"-54.03","end_lon":"-38.04"}'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8000/api/route
 </code></pre></div>
 <p>This will return a response containing:</p>
@@ -3278,7 +3278,7 @@ options:
 </ul>
 <h3 id="2-monitor-job-status">2. Monitor Job Status<a class="headerlink" href="#2-monitor-job-status" title="Permanent link">&para;</a></h3>
 <p>Use the job ID to monitor the calculation status by making GET requests to the <code>/api/job/{job_id}</code> endpoint:</p>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--request<span class="w"> </span>GET<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8000/api/job/5c39308e-b88c-4988-9e4b-1c33bc97c90c
 </code></pre></div>
@@ -3303,14 +3303,14 @@ options:
 </ul>
 <h3 id="3-retrieve-route-data">3. Retrieve Route Data<a class="headerlink" href="#3-retrieve-route-data" title="Permanent link">&para;</a></h3>
 <p>Once the job status is SUCCESS, retrieve the actual route data using the route ID:</p>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--request<span class="w"> </span>GET<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8000/api/route/9
 </code></pre></div>
 <p>This will return the complete route data.</p>
 <h3 id="optional-cancel-job">Optional: Cancel Job<a class="headerlink" href="#optional-cancel-job" title="Permanent link">&para;</a></h3>
 <p>You can cancel a running job by making a DELETE request to the job endpoint:</p>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--header<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--request<span class="w"> </span>DELETE<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8000/api/job/5c39308e-b88c-4988-9e4b-1c33bc97c90c
 </code></pre></div>
@@ -3370,7 +3370,7 @@ options:
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
