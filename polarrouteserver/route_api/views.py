@@ -674,6 +674,12 @@ class EvaluateRouteView(LoggingMixin, ResponseMixin, APIView):
                     allow_null=True,
                     help_text="Optional: Custom mesh ID to use for evaluation.",
                 ),
+                "route_type": serializers.ChoiceField(
+                    choices=["dijkstra", "smoothed"],
+                    default="smoothed",
+                    required=False,
+                    help_text="Type of route calculation: 'dijkstra' or 'smoothed'. Defaults to 'smoothed'.",
+                ),
             },
         ),
         responses={
@@ -686,6 +692,7 @@ class EvaluateRouteView(LoggingMixin, ResponseMixin, APIView):
         data = request.data
         route_json = data.get("route", None)
         custom_mesh_id = data.get("custom_mesh_id", None)
+        route_type = data.get("route_type", "smoothed")
 
         if custom_mesh_id:
             try:
@@ -701,7 +708,7 @@ class EvaluateRouteView(LoggingMixin, ResponseMixin, APIView):
 
         response_data = {"polarrouteserver-version": polarrouteserver_version}
 
-        result_dict = evaluate_route(route_json, meshes[0])
+        result_dict = evaluate_route(route_json, meshes[0], route_type=route_type)
 
         if result_dict is None:
             result_dict = {"error": "Route evaluation not possible."}

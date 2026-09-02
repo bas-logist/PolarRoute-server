@@ -9,10 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `/health/` endpoint and `HEALTHCHECK` in the Docker container. 
-- Docker production and development settings modules.
-- `compose.prod.yml` for modifying the compose config for production.
+- Added `route_type` parameter to `evaluate_route`, allowing user to specify the route type used in `route_calc`.
+- Added `route_type` parameter to the route evaluation API endpoint and updated API schema.
 
 ### Changed
+- Updated `evaluate_route` to call `route_calc` using keyword arguments.
+- Restricted `polar-route` dependency to `>=1.1.10`.
+- Docker production and development settings modules.
+- `compose.prod.yml` for modifying the compose config for production.
 - Re-worked docker container to create a production build-stage.
 - Added static file collection to the docker entrypoint script.
  
