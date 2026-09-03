@@ -55,6 +55,7 @@ dev = [
     "pytest-celery",
     "pytest-django",
     "ruff",
+    "aiomoto[server]", # s3 mocking library
 ]
 build = [
     "build"
@@ -64,6 +65,9 @@ cov = [
 ]
 cov-badge = [
     "coverage-badge"
+]
+s3 = [
+    "s3fs"
 ]
 
 [dependency-groups]
