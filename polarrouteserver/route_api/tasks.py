@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import copy
 import datetime
 import gzip
@@ -18,6 +19,12 @@ import polar_route
 from polar_route.route_planner.route_planner import RoutePlanner
 from polar_route.utils import extract_geojson_routes
 import yaml
+
+# handle optional dependencies
+try:
+    import s3fs
+except ImportError:
+    s3fs = None
 
 from polarrouteserver.celery import app
 from .models import Job, Mesh, Route
@@ -164,25 +171,7 @@ def import_new_meshes(self):
     if settings.MESH_METADATA_DIR is None:
         raise ValueError("MESH_METADATA_DIR has not been set.")
 
-    # find the latest metadata file
-    files = os.listdir(settings.MESH_METADATA_DIR)
-    file_list = [
-        os.path.join(settings.MESH_METADATA_DIR, file)
-        for file in files
-        if file.startswith("upload_metadata") and file.endswith(".yaml.gz")
-    ]
-    if len(file_list) == 0:
-        msg = "Upload metadata file not found."
-        logger.error(msg)
-        return
-    latest_metadata_file = max(file_list, key=os.path.getctime)
-
-    # load in the metadata
-    logger.info(
-        f"Loading metadata file from {os.path.join(settings.MESH_METADATA_DIR, latest_metadata_file)}"
-    )
-    with gzip.open(latest_metadata_file, "rb") as f:
-        metadata = yaml.load(f.read(), Loader=yaml.Loader)
+    metadata = _get_latest_metadata(settings.MESH_METADATA_DIR)
 
     meshes_added = []
     for record in metadata["records"]:
@@ -196,8 +185,8 @@ def import_new_meshes(self):
         # load in the mesh json
         try:
             zipped_filename = mesh_filename + ".gz"
-            with gzip.open(
-                Path(settings.MESH_DIR, zipped_filename), "rb"
+            with open_gzipped_file(
+                f"{settings.MESH_DIR.rstrip('/')}/{zipped_filename.lstrip('/')}", "rb"
             ) as gzipped_mesh:
                 mesh_json = json.load(gzipped_mesh)
         except FileNotFoundError:
@@ -258,6 +247,89 @@ def import_new_meshes(self):
             )
 
     return meshes_added
+
+
+def _get_latest_metadata(dir_path: str | Path) -> dict:
+    latest_metadata_file = _get_latest_metadata_file(dir_path)
+
+    # load in the metadata
+    logger.info(f"Loading metadata file from {latest_metadata_file}")
+    with open_gzipped_file(latest_metadata_file, "rb") as f:
+        metadata = yaml.load(f.read(), Loader=yaml.Loader)
+
+    return metadata
+
+
+def _get_latest_metadata_file(dir_path: str | Path) -> Path:
+    dir_path = str(dir_path) if not isinstance(dir_path, str) else dir_path
+
+    if dir_path.startswith("s3://"):
+        fs = _get_s3_filesystem()
+
+        pattern = "upload_metadata*.yaml.gz"
+
+        # Combine directory path and pattern into an S3 glob expression
+        search_path = os.path.join(dir_path, pattern)
+
+        # Find all matching object paths in S3
+        matching_files = fs.glob(search_path)
+        if not matching_files:
+            raise FileNotFoundError(f"No files matching '{pattern}' in {dir_path}")
+
+        # Sort files by S3's 'LastModified' metadata attribute
+        # fs.info(f) returns metadata including 'LastModified' timestamp
+        latest_file_path = max(matching_files, key=lambda f: fs.info(f)["LastModified"])
+
+        # Re-attach protocol prefix if needed
+        return (
+            f"s3://{latest_file_path}"
+            if not latest_file_path.startswith("s3://")
+            else latest_file_path
+        )
+
+    else:
+        files = os.listdir(settings.MESH_METADATA_DIR)
+        file_list = [
+            os.path.join(settings.MESH_METADATA_DIR, file)
+            for file in files
+            if file.startswith("upload_metadata") and file.endswith(".yaml.gz")
+        ]
+        if len(file_list) == 0:
+            msg = "Upload metadata file not found."
+            logger.error(msg)
+            return
+        latest_metadata_file = max(file_list, key=os.path.getctime)
+        return latest_metadata_file
+
+
+def _get_s3_filesystem():
+    return s3fs.S3FileSystem(
+        endpoint_url=settings.S3_ENDPOINT_URL,
+        key=settings.S3_KEY,
+        secret=settings.S3_SECRET,
+        client_kwargs={"region_name": settings.S3_REGION},
+    )
+
+
+@contextmanager
+def open_gzipped_file(file_path: str | Path, mode="rt"):
+    """Opens a local or S3 gzipped file using standard context management.
+
+    :param file_path: Path string starting with 's3://' or a local path
+    :param mode: File mode, defaults to 'rt' (read text)
+    """
+    file_path = str(file_path) if not isinstance(file_path, str) else file_path
+
+    if file_path.startswith("s3://"):
+        fs = _get_s3_filesystem()
+        # s3fs.open returns a file-like object compatible with gzip
+        with fs.open(file_path, mode=mode.replace("t", "b")) as f:
+            with gzip.open(f, mode=mode) as gz_f:
+                yield gz_f
+    else:
+        # Standard local file opening
+        with gzip.open(file_path, mode=mode) as gz_f:
+            yield gz_f
 
 
 @app.task(bind=True)
