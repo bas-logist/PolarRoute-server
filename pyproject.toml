@@ -27,6 +27,7 @@ dependencies = [
     "polar-route==1.0.0",
     "psycopg>=3",
     "pyyaml",
+    "s3fs",
     "SQLAlchemy",
 ]
 
@@ -65,9 +66,6 @@ cov = [
 ]
 cov-badge = [
     "coverage-badge"
-]
-s3 = [
-    "s3fs"
 ]
 
 [dependency-groups]
