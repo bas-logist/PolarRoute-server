@@ -49,7 +49,7 @@ COPY --chown=django:django polarrouteserver /usr/src/app/polarrouteserver
 ENV DJANGO_SETTINGS_MODULE=polarrouteserver.settings.docker.production
 
 # install optional dependencies
-RUN uv pip install --system .[s3]
+RUN uv pip install --system .
 
 # install production dependencies including gunicorn
 RUN uv pip install --system --group production
