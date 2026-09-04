@@ -6,8 +6,13 @@ TEST_MESH_PATH = Path("tests", "fixtures", "test_vessel_mesh.json")
 TEST_ROUTE_PATH = Path("tests", "fixtures", "test_route.json")
 TEST_ROUTE_OOM_PATH = Path("tests", "fixtures", "test_route_out_of_mesh.json")
 TEST_VEHICLE_PATH = Path("tests", "fixtures", "test_vessel_config.json")
-MESH_DIR = Path("tests", "fixtures")
+MESH_DIR = "tests/fixtures"
 MESH_METADATA_DIR = MESH_DIR
+
+S3_ENDPOINT_URL = "http://localhost:5000"
+S3_KEY = "testing"
+S3_SECRET = "testing"
+S3_REGION = "eu-west-1"
 
 CELERY_BROKER_URL = "memory://"
 CELERY_RESULT_BACKEND = "db+sqlite:///results.sqlite"

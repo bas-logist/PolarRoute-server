@@ -20,6 +20,15 @@ BASE_DIR = os.getenv("POLARROUTE_BASE_DIR", os.getcwd())
 MESH_DIR = os.getenv("POLARROUTE_MESH_DIR", None)
 MESH_METADATA_DIR = os.getenv("POLARROUTE_MESH_METADATA_DIR", None)
 
+
+# S3 Bucket settings
+# For reading mesh and mesh metadata from S3
+S3_ENDPOINT_URL = os.getenv("POLARROUTE_S3_ENDPOINT_URL", None)
+# S3_BUCKET = os.getenv("POLARROUTE_S3_BUCKET", None)
+S3_KEY = os.getenv("POLARROUTE_S3_KEY", None)
+S3_SECRET = os.getenv("POLARROUTE_S3_SECRET", None)
+S3_REGION = os.getenv("POLARROUTE_S3_REGION", None)
+
 # Automated cleanup settings
 CLEANUP_ROUTES = os.getenv("POLARROUTE_CLEANUP_ROUTES", False)
 CLEANUP_ROUTES_DAYS = os.getenv("POLARROUTE_CLEANUP_ROUTES_DAYS", 365)
