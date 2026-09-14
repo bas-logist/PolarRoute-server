@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 import copy
 import datetime
 import gzip
@@ -6,6 +5,7 @@ import json
 import os
 import re
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
