@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Re-worked docker container to create a production build-stage.
 - Added static file collection to the docker entrypoint script.
+- A number of syntax changes throughout to comply with default rules enabled in ruff >0.16.
  
 ## 0.2.7 - 2025-12-22
 
