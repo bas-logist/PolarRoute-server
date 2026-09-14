@@ -2,24 +2,25 @@ import copy
 import datetime
 import gzip
 import json
-from pathlib import Path
-import tempfile
 import os
 import re
+import tempfile
+from pathlib import Path
 
+import numpy as np
+import pandas as pd
+import polar_route
+import yaml
 from celery import states
 from celery.exceptions import Ignore
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.utils import timezone
-import numpy as np
-import pandas as pd
-import polar_route
 from polar_route.route_planner.route_planner import RoutePlanner
 from polar_route.utils import extract_geojson_routes
-import yaml
 
 from polarrouteserver.celery import app
+
 from .models import Job, Mesh, Route
 from .utils import calculate_md5, check_mesh_data
 

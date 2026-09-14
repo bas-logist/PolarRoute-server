@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Vehicle, Route, Mesh, Job, Location
+from .models import Job, Location, Mesh, Route, Vehicle
 
 LIST_PER_PAGE = 20
 

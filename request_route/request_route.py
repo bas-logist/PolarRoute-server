@@ -208,7 +208,7 @@ def parse_location(location: str) -> Location:
         a Location object
     """
     pattern = r"[+-]?([0-9]*[.])?[0-9]+,[+-]?([0-9]*[.])?[0-9]+"
-    if location in STANDARD_LOCATIONS.keys():
+    if location in STANDARD_LOCATIONS:
         standard_location = STANDARD_LOCATIONS.get(location)
         return standard_location
     elif re.search(pattern, location):
@@ -223,7 +223,7 @@ def parse_location(location: str) -> Location:
 def parse_args():
     parser = argparse.ArgumentParser(
         description=f"Requests a route from polarRouteServer, monitors job status until complete, then retrieves the route data. \
-        Specify start and end points by coordinates or from one of the standard locations: {[loc for loc in STANDARD_LOCATIONS.keys()]}"
+        Specify start and end points by coordinates or from one of the standard locations: {[loc for loc in STANDARD_LOCATIONS]}"
     )
     parser.add_argument(
         "-u",

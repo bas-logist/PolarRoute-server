@@ -1,11 +1,12 @@
+from celery.result import AsyncResult
 from rest_framework import serializers
 from rest_framework.reverse import reverse
-from celery.result import AsyncResult
 from taggit.serializers import TaggitSerializer, TagListSerializerField
 
-from .models import Mesh, Vehicle, Route, Job, Location
-from polarrouteserver.celery import app
 from polarrouteserver._version import __version__ as polarrouteserver_version
+from polarrouteserver.celery import app
+
+from .models import Job, Location, Mesh, Route, Vehicle
 
 
 class JobStatusSerializer(serializers.ModelSerializer):
