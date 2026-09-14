@@ -154,9 +154,7 @@ def _closest_route_in_tolerance(
 
         from operator import itemgetter
 
-        closest_route = sorted(
-            routes_in_tolerance, key=itemgetter("cumulative_distance")
-        )[0]
+        closest_route = min(routes_in_tolerance, key=itemgetter("cumulative_distance"))
         return Route.objects.get(id=closest_route["id"])
 
 
