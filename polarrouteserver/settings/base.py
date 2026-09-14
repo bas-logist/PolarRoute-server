@@ -21,16 +21,16 @@ MESH_DIR = os.getenv("POLARROUTE_MESH_DIR", None)
 MESH_METADATA_DIR = os.getenv("POLARROUTE_MESH_METADATA_DIR", None)
 
 # Automated cleanup settings
-CLEANUP_ROUTES = os.getenv("POLARROUTE_CLEANUP_ROUTES", False)
-CLEANUP_ROUTES_DAYS = os.getenv("POLARROUTE_CLEANUP_ROUTES_DAYS", "365")
-CLEANUP_MESHES = os.getenv("POLARROUTE_CLEANUP_MESHES", False)
-CLEANUP_MESHES_DAYS = os.getenv("POLARROUTE_CLEANUP_MESHES_DAYS", "365")
+CLEANUP_ROUTES = os.getenv("POLARROUTE_CLEANUP_ROUTES", "False").lower() == "true"
+CLEANUP_ROUTES_DAYS = int(os.getenv("POLARROUTE_CLEANUP_ROUTES_DAYS", "365"))
+CLEANUP_MESHES = os.getenv("POLARROUTE_CLEANUP_MESHES", "False").lower() == "true"
+CLEANUP_MESHES_DAYS = int(os.getenv("POLARROUTE_CLEANUP_MESHES_DAYS", "365"))
 
 # FIXTURE_DIRS = []
 
 # NOTE: set this in production
 SECRET_KEY = os.getenv("POLARROUTE_SECRET_KEY", secrets.token_hex(100))
-DEBUG = os.getenv("POLARROUTE_DEBUG", "False").lower() == "True"
+DEBUG = os.getenv("POLARROUTE_DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = [
     "localhost",
@@ -172,7 +172,7 @@ DATABASES = {
         "USER": os.getenv("POLARROUTE_DB_USER", "polarroute"),
         "PASSWORD": os.getenv("POLARROUTE_DB_PASSWORD", "polarroute"),
         "HOST": os.getenv("POLARROUTE_DB_HOST", "127.0.0.1"),
-        "PORT": os.getenv("POLARROUTE_DB_PORT", "5432"),
+        "PORT": int(os.getenv("POLARROUTE_DB_PORT", "5432")),
     }
 }
 
