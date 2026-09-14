@@ -1,9 +1,9 @@
-from django.contrib import admin
 from django.conf import settings
+from django.contrib import admin
 from django.urls import include, path
-from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from health_check.views import HealthCheckView
+from rest_framework.routers import DefaultRouter
 
 from polarrouteserver.route_api import views
 
@@ -66,7 +66,6 @@ urlpatterns = [
     ),
 ]
 
-# noqa
 try:
     from debug_toolbar.toolbar import debug_toolbar_urls
 

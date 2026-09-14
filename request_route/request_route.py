@@ -19,7 +19,7 @@ from urllib.error import HTTPError
 
 
 class Location:
-    def __init__(self, lat: float, lon: float, name: str = None):
+    def __init__(self, lat: float, lon: float, name: str | None = None):
         self.lat = lat
         self.lon = lon
         self.name = name
@@ -39,7 +39,7 @@ STANDARD_LOCATIONS = {
 
 
 def make_request(
-    type: str, url: str, endpoint: str, headers: dict, body: dict = None
+    type: str, url: str, endpoint: str, headers: dict, body: dict | None = None
 ) -> http.client.HTTPResponse:
     """Sends HTTP request, prints details and returns response.
 
@@ -86,8 +86,8 @@ def request_route(
     status_update_delay: int = 30,
     num_requests: int = 10,
     force_new_route: bool = False,
-    mesh_id: int = None,
-    tags: list = None,
+    mesh_id: int | None = None,
+    tags: list | None = None,
 ) -> str:
     """Requests a route from polarRouteServer, monitors job status until complete, then retrieves route data.
 
@@ -153,7 +153,7 @@ def request_route(
 
         # make job status request
         print(f"Status request #{status_request_count} of {num_requests}")
-        status_response, status_code = make_request(
+        status_response, _ = make_request(
             "GET",
             status_url,
             None,
@@ -208,7 +208,7 @@ def parse_location(location: str) -> Location:
         a Location object
     """
     pattern = r"[+-]?([0-9]*[.])?[0-9]+,[+-]?([0-9]*[.])?[0-9]+"
-    if location in STANDARD_LOCATIONS.keys():
+    if location in STANDARD_LOCATIONS:
         standard_location = STANDARD_LOCATIONS.get(location)
         return standard_location
     elif re.search(pattern, location):
@@ -223,7 +223,7 @@ def parse_location(location: str) -> Location:
 def parse_args():
     parser = argparse.ArgumentParser(
         description=f"Requests a route from polarRouteServer, monitors job status until complete, then retrieves the route data. \
-        Specify start and end points by coordinates or from one of the standard locations: {[loc for loc in STANDARD_LOCATIONS.keys()]}"
+        Specify start and end points by coordinates or from one of the standard locations: {[loc for loc in STANDARD_LOCATIONS]}"
     )
     parser.add_argument(
         "-u",

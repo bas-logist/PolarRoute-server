@@ -1,7 +1,8 @@
-from datetime import datetime
 import gzip
 import hashlib
 import json
+from datetime import datetime
+from datetime import timezone as tz
 from typing import Any
 
 from django.core.management.base import BaseCommand, CommandError, CommandParser
@@ -40,11 +41,11 @@ class Command(BaseCommand):
                     "valid_date_start": datetime.strptime(
                         mesh_json["config"]["mesh_info"]["region"]["start_time"],
                         "%Y-%m-%d",
-                    ),
+                    ).replace(tzinfo=tz.utc),
                     "valid_date_end": datetime.strptime(
                         mesh_json["config"]["mesh_info"]["region"]["end_time"],
                         "%Y-%m-%d",
-                    ),
+                    ).replace(tzinfo=tz.utc),
                     "created": timezone.now(),
                     "json": mesh_json,
                     "meshiphi_version": "not found",

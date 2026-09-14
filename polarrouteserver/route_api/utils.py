@@ -3,10 +3,9 @@ import json
 import logging
 import os
 from tempfile import NamedTemporaryFile
-from typing import Union
 
-from django.conf import settings
 import haversine
+from django.conf import settings
 from polar_route.route_calc import route_calc
 from polar_route.utils import convert_decimal_days
 
@@ -20,7 +19,7 @@ def select_mesh(
     start_lon: float,
     end_lat: float,
     end_lon: float,
-) -> Union[list[Mesh], None]:
+) -> list[Mesh] | None:
     """Find the most suitable mesh from the database for a given set of start and end coordinates.
     Returns either a list of Mesh objects or None.
     """
@@ -53,12 +52,12 @@ def select_mesh(
 
 
 def route_exists(
-    meshes: Union[Mesh, list[Mesh]],
+    meshes: Mesh | list[Mesh],
     start_lat: float,
     start_lon: float,
     end_lat: float,
     end_lon: float,
-) -> Union[Route, None]:
+) -> Route | None:
     """Check if a route of given parameters has already been calculated.
     Works through list of meshes in order, returns first matching route
     Return None if not and the route object if it has.
@@ -113,7 +112,7 @@ def _closest_route_in_tolerance(
     end_lat: float,
     end_lon: float,
     tolerance_nm: float = settings.WAYPOINT_DISTANCE_TOLERANCE,
-) -> Union[Route, None]:
+) -> Route | None:
     """Takes a list of routes and returns the closest if any are within tolerance, or None."""
 
     def point_within_tolerance(point_1: tuple, point_2: tuple) -> bool:
@@ -142,7 +141,7 @@ def _closest_route_in_tolerance(
     else:
         for i, route_dict in enumerate(routes_in_tolerance):
             route = Route.objects.get(id=route_dict["id"])
-            routes_in_tolerance[i].update(
+            route_dict.update(
                 {
                     "cumulative_distance": haversine_distance(
                         (start_lat, start_lon), (route.start_lat, route.start_lon)
@@ -155,9 +154,7 @@ def _closest_route_in_tolerance(
 
         from operator import itemgetter
 
-        closest_route = sorted(
-            routes_in_tolerance, key=itemgetter("cumulative_distance")
-        )[0]
+        closest_route = min(routes_in_tolerance, key=itemgetter("cumulative_distance"))
         return Route.objects.get(id=closest_route["id"])
 
 
@@ -186,13 +183,11 @@ def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
         route_json["features"][0]["properties"] = {"from": "Start", "to": "End"}
 
     # route_calc only supports files, write out both route and mesh as temporary files
-    route_file = NamedTemporaryFile(delete=False, suffix=".json")
-    with open(route_file.name, "w") as fp:
-        json.dump(route_json, fp)
+    with NamedTemporaryFile(mode="w", delete=False, suffix=".json") as route_file:
+        json.dump(route_json, route_file)
 
-    mesh_file = NamedTemporaryFile(delete=False, suffix=".json")
-    with open(mesh_file.name, "w") as fp:
-        json.dump(mesh.json, fp)
+    with NamedTemporaryFile(mode="w", delete=False, suffix=".json") as mesh_file:
+        json.dump(mesh.json, mesh_file)
 
     try:
         calc_route = route_calc(route_file.name, mesh_file.name)
@@ -200,22 +195,25 @@ def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
         time_str = convert_decimal_days(time_days)
         fuel = round(calc_route["features"][0]["properties"]["fuel"][-1], 2)
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(e)
         return None
     finally:
         for file in (route_file, mesh_file):
             try:
                 os.remove(file.name)
-            except Exception as e:
+            except OSError as e:
                 logger.warning(f"{file} not removed due to {e}")
 
-    return dict(
-        route=calc_route, time_days=time_days, time_str=time_str, fuel_tonnes=fuel
-    )
+    return {
+        "route": calc_route,
+        "time_days": time_days,
+        "time_str": time_str,
+        "fuel_tonnes": fuel,
+    }
 
 
-def select_mesh_for_route_evaluation(route: dict) -> Union[list[Mesh], None]:
+def select_mesh_for_route_evaluation(route: dict) -> list[Mesh] | None:
     """Select a mesh from the database to be used for route evaluation.
     The latest mesh containing all points in the route will be chosen.
     If no suitable meshes are available, return None.

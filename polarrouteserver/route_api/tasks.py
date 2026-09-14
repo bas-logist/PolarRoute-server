@@ -2,24 +2,25 @@ import copy
 import datetime
 import gzip
 import json
-from pathlib import Path
-import tempfile
 import os
 import re
+import tempfile
+from pathlib import Path
 
+import numpy as np
+import pandas as pd
+import polar_route
+import yaml
 from celery import states
 from celery.exceptions import Ignore
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.utils import timezone
-import numpy as np
-import pandas as pd
-import polar_route
 from polar_route.route_planner.route_planner import RoutePlanner
 from polar_route.utils import extract_geojson_routes
-import yaml
 
 from polarrouteserver.celery import app
+
 from .models import Job, Mesh, Route
 from .utils import calculate_md5, check_mesh_data
 
@@ -32,7 +33,7 @@ logger = get_task_logger(__name__)
 def optimise_route(
     self,
     route_id: int,
-    backup_mesh_ids: list[int] = None,
+    backup_mesh_ids: list[int] | None = None,
 ) -> dict:
     """
     Use PolarRoute to calculate optimal route from Route database object and mesh.
@@ -53,7 +54,7 @@ def optimise_route(
         logger.info(f"Also got backup mesh ids {backup_mesh_ids}")
 
     # add warning on mesh date if older than today
-    if mesh.created.date() < datetime.datetime.now().date():
+    if mesh.created.date() < datetime.datetime.now(tz=datetime.timezone.utc).date():
         route.info = {
             "info": f"Latest available mesh from {datetime.datetime.strftime(mesh.created, '%Y/%m/%d %H:%M%S')}"
         }
@@ -133,7 +134,7 @@ def optimise_route(
 
         return smoothed_routes
 
-    except Exception as e:
+    except Exception as e:  # noqa BLE001
         logger.error(e)
         self.update_state(state=states.FAILURE)
         # this is awful, polar route should raise a custom error class
@@ -210,10 +211,10 @@ def import_new_meshes(self):
             continue
 
         # write out the unzipped mesh to temp file
-        tfile = tempfile.NamedTemporaryFile(mode="w+", delete=True)
-        json.dump(mesh_json, tfile, indent=4)
-        tfile.flush()
-        md5 = calculate_md5(tfile.name)
+        with tempfile.NamedTemporaryFile(mode="w+", delete=True) as tfile:
+            json.dump(mesh_json, tfile, indent=4)
+            tfile.flush()
+            md5 = calculate_md5(tfile.name)
 
         # cross reference md5 hash from file record in metadata to actual file on disk
         if md5 != record["md5"]:
@@ -264,7 +265,7 @@ def import_new_meshes(self):
 def cleanup_routes(self):
     # catch any unexpected error where this task is called without the correct setting, this shouldn't happen, but protects against unintented use of this destructive method
     if not settings.CLEANUP_ROUTES:
-        raise Exception(
+        raise RuntimeWarning(
             "cleanup_routes has been executed but the CLEANUP_ROUTES setting is not True. Exiting."
         )
 
@@ -281,7 +282,7 @@ def cleanup_routes(self):
 def cleanup_meshes(self):
     # catch any unexpected error where this task is called without the correct setting, this shouldn't happen, but protects against unintented use of this destructive method
     if not settings.CLEANUP_MESHES:
-        raise Exception(
+        raise RuntimeWarning(
             "cleanup_meshes has been executed but the CLEANUP_MESHES setting is not True. Exiting."
         )
 
