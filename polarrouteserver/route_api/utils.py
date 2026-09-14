@@ -185,13 +185,11 @@ def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
         route_json["features"][0]["properties"] = {"from": "Start", "to": "End"}
 
     # route_calc only supports files, write out both route and mesh as temporary files
-    route_file = NamedTemporaryFile(delete=False, suffix=".json")
-    with open(route_file.name, "w") as fp:
-        json.dump(route_json, fp)
+    with NamedTemporaryFile(mode="w", delete=False, suffix=".json") as route_file:
+        json.dump(route_json, route_file)
 
-    mesh_file = NamedTemporaryFile(delete=False, suffix=".json")
-    with open(mesh_file.name, "w") as fp:
-        json.dump(mesh.json, fp)
+    with NamedTemporaryFile(mode="w", delete=False, suffix=".json") as mesh_file:
+        json.dump(mesh.json, mesh_file)
 
     try:
         calc_route = route_calc(route_file.name, mesh_file.name)
