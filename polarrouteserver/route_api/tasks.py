@@ -33,7 +33,7 @@ logger = get_task_logger(__name__)
 def optimise_route(
     self,
     route_id: int,
-    backup_mesh_ids: list[int] = None,
+    backup_mesh_ids: list[int] | None = None,
 ) -> dict:
     """
     Use PolarRoute to calculate optimal route from Route database object and mesh.

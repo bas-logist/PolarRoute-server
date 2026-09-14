@@ -19,7 +19,7 @@ from urllib.error import HTTPError
 
 
 class Location:
-    def __init__(self, lat: float, lon: float, name: str = None):
+    def __init__(self, lat: float, lon: float, name: str | None = None):
         self.lat = lat
         self.lon = lon
         self.name = name
@@ -39,7 +39,7 @@ STANDARD_LOCATIONS = {
 
 
 def make_request(
-    type: str, url: str, endpoint: str, headers: dict, body: dict = None
+    type: str, url: str, endpoint: str, headers: dict, body: dict | None = None
 ) -> http.client.HTTPResponse:
     """Sends HTTP request, prints details and returns response.
 
@@ -86,8 +86,8 @@ def request_route(
     status_update_delay: int = 30,
     num_requests: int = 10,
     force_new_route: bool = False,
-    mesh_id: int = None,
-    tags: list = None,
+    mesh_id: int | None = None,
+    tags: list | None = None,
 ) -> str:
     """Requests a route from polarRouteServer, monitors job status until complete, then retrieves route data.
 
