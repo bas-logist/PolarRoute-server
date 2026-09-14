@@ -209,9 +209,12 @@ def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
             except Exception as e:
                 logger.warning(f"{file} not removed due to {e}")
 
-    return dict(
-        route=calc_route, time_days=time_days, time_str=time_str, fuel_tonnes=fuel
-    )
+    return {
+        "route": calc_route,
+        "time_days": time_days,
+        "time_str": time_str,
+        "fuel_tonnes": fuel,
+    }
 
 
 def select_mesh_for_route_evaluation(route: dict) -> list[Mesh] | None:
