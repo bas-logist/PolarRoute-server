@@ -124,7 +124,7 @@ class VehicleRequestView(LoggingMixin, ResponseMixin, GenericAPIView):
         try:
             validate_vessel_config(data)
             logger.info("Vessel config is valid.")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001  --- until we can use a version of polarroute with custom exceptions
             if isinstance(e, ValidationError):
                 error_message = f"Validation error: {e.message}"
             else:

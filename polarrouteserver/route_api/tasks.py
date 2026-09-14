@@ -134,7 +134,7 @@ def optimise_route(
 
         return smoothed_routes
 
-    except Exception as e:
+    except Exception as e:  # noqa BLE001
         logger.error(e)
         self.update_state(state=states.FAILURE)
         # this is awful, polar route should raise a custom error class
@@ -265,7 +265,7 @@ def import_new_meshes(self):
 def cleanup_routes(self):
     # catch any unexpected error where this task is called without the correct setting, this shouldn't happen, but protects against unintented use of this destructive method
     if not settings.CLEANUP_ROUTES:
-        raise Exception(
+        raise RuntimeWarning(
             "cleanup_routes has been executed but the CLEANUP_ROUTES setting is not True. Exiting."
         )
 
@@ -282,7 +282,7 @@ def cleanup_routes(self):
 def cleanup_meshes(self):
     # catch any unexpected error where this task is called without the correct setting, this shouldn't happen, but protects against unintented use of this destructive method
     if not settings.CLEANUP_MESHES:
-        raise Exception(
+        raise RuntimeWarning(
             "cleanup_meshes has been executed but the CLEANUP_MESHES setting is not True. Exiting."
         )
 

@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import DatabaseError
 
 from .models import Job, Location, Mesh, Route, Vehicle
 
@@ -116,7 +118,7 @@ class JobAdmin(admin.ModelAdmin):
         """Get current job status from Celery."""
         try:
             return obj.status if obj.status is not None else "UNKNOWN"
-        except Exception as e:
+        except (DatabaseError, ObjectDoesNotExist, AttributeError) as e:
             return f"Error: {type(e).__name__}"
 
     get_status.short_description = "Status"

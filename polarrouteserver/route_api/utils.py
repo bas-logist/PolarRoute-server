@@ -195,14 +195,14 @@ def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
         time_str = convert_decimal_days(time_days)
         fuel = round(calc_route["features"][0]["properties"]["fuel"][-1], 2)
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(e)
         return None
     finally:
         for file in (route_file, mesh_file):
             try:
                 os.remove(file.name)
-            except Exception as e:
+            except OSError as e:
                 logger.warning(f"{file} not removed due to {e}")
 
     return {
