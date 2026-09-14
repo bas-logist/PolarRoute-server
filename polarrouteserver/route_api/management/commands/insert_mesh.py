@@ -1,7 +1,8 @@
 import gzip
 import hashlib
 import json
-from datetime import datetime, timezone as tz
+from datetime import datetime
+from datetime import timezone as tz
 from typing import Any
 
 from django.core.management.base import BaseCommand, CommandError, CommandParser

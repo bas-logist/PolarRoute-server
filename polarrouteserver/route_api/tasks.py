@@ -54,7 +54,7 @@ def optimise_route(
         logger.info(f"Also got backup mesh ids {backup_mesh_ids}")
 
     # add warning on mesh date if older than today
-    if mesh.created.date() < datetime.datetime.now().date():
+    if mesh.created.date() < datetime.datetime.now(tz=datetime.timezone.utc).date():
         route.info = {
             "info": f"Latest available mesh from {datetime.datetime.strftime(mesh.created, '%Y/%m/%d %H:%M%S')}"
         }
