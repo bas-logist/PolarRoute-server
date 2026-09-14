@@ -647,11 +647,11 @@ class MeshView(LoggingMixin, ResponseMixin, APIView):
         try:
             mesh = Mesh.objects.get(id=id)
             data.update(
-                dict(
-                    id=mesh.id,
-                    json=mesh.json,
-                    geojson=EnvironmentMesh.load_from_json(mesh.json).to_geojson(),
-                )
+                {
+                    "id": mesh.id,
+                    "json": mesh.json,
+                    "geojson": EnvironmentMesh.load_from_json(mesh.json).to_geojson(),
+                }
             )
 
             return self.success_response(data)
