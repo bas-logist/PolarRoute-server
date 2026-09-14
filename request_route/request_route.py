@@ -153,7 +153,7 @@ def request_route(
 
         # make job status request
         print(f"Status request #{status_request_count} of {num_requests}")
-        status_response, status_code = make_request(
+        status_response, _ = make_request(
             "GET",
             status_url,
             None,
