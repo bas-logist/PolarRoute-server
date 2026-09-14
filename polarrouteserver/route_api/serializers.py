@@ -30,14 +30,14 @@ class JobStatusSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Job
-        fields = [
+        fields = (
             "id",
             "status",
             "route_id",
             "created",
             "route_url",
             "info",
-        ]
+        )
 
     def _get_celery_result(self, obj):
         """Get Celery result object for this job."""
@@ -82,7 +82,7 @@ class JobStatusSerializer(serializers.ModelSerializer):
 class VehicleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
-        fields = [
+        fields = (
             "vessel_type",
             "max_speed",
             "unit",
@@ -94,7 +94,7 @@ class VehicleSerializer(serializers.ModelSerializer):
             "beam",
             "hull_type",
             "force_limit",
-        ]
+        )
 
 
 class VesselTypeSerializer(serializers.Serializer):
@@ -107,7 +107,7 @@ class RouteSerializer(TaggitSerializer, serializers.ModelSerializer):
 
     class Meta:
         model = Route
-        fields = [
+        fields = (
             "id",
             "start_lat",
             "start_lon",
@@ -123,7 +123,7 @@ class RouteSerializer(TaggitSerializer, serializers.ModelSerializer):
             "requested",
             "calculated",
             "tags",
-        ]
+        )
 
     def _extract_routes_by_type(self, route_data, route_type):
         """Extract routes of a specific optimisation type from route data."""
@@ -300,9 +300,7 @@ class RouteSerializer(TaggitSerializer, serializers.ModelSerializer):
 class ModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mesh
-        fields = [
-            "id",
-        ]
+        fields = ("id",)
 
     def to_representation(self, instance):
         return super().to_representation(instance)
@@ -311,9 +309,9 @@ class ModelSerializer(serializers.ModelSerializer):
 class LocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
-        fields = [
+        fields = (
             "id",
             "lat",
             "lon",
             "name",
-        ]
+        )

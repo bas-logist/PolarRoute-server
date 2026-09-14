@@ -7,12 +7,12 @@ LIST_PER_PAGE = 20
 
 @admin.register(Vehicle)
 class VehicleAdmin(admin.ModelAdmin):
-    list_display = ["vessel_type"]
+    list_display = ("vessel_type",)
 
 
 @admin.register(Route)
 class RouteAdmin(admin.ModelAdmin):
-    list_display = [
+    list_display = (
         "id",
         "display_start",
         "display_end",
@@ -23,7 +23,7 @@ class RouteAdmin(admin.ModelAdmin):
         "mesh_id",
         "info",
         "polar_route_version",
-    ]
+    )
     ordering = ("-requested",)
     list_filter = ("tags", "calculated", "requested")
     search_fields = ("start_name", "end_name", "tags__name")
@@ -104,12 +104,12 @@ class RouteAdmin(admin.ModelAdmin):
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
-    list_display = [
+    list_display = (
         "id",
         "datetime",
         "route",
         "get_status",
-    ]
+    )
     ordering = ("-datetime",)
 
     def get_status(self, obj):
@@ -124,7 +124,7 @@ class JobAdmin(admin.ModelAdmin):
 
 @admin.register(Mesh)
 class MeshAdmin(admin.ModelAdmin):
-    list_display = [
+    list_display = (
         "id",
         "valid_date_start",
         "valid_date_end",
@@ -135,7 +135,7 @@ class MeshAdmin(admin.ModelAdmin):
         "lon_max",
         "name",
         "size",
-    ]
+    )
     ordering = ("-created",)
 
     def get_queryset(self, request):
@@ -146,12 +146,12 @@ class MeshAdmin(admin.ModelAdmin):
 
 @admin.register(Location)
 class LocationAdmin(admin.ModelAdmin):
-    list_display = [
+    list_display = (
         "id",
         "name",
         "lat",
         "lon",
-    ]
-    list_filter = ["name"]
-    search_fields = ["name"]
-    ordering = ["name"]
+    )
+    list_filter = ("name",)
+    search_fields = ("name",)
+    ordering = ("name",)

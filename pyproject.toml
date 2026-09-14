@@ -86,6 +86,12 @@ request_route = "request_route.request_route:main"
 [tool.ruff]
 exclude = ["tests/*"]
 
+[tool.ruff.lint]
+ignore = [
+    "RUF012", # allow mutable default values for class attributes (because Django uses them)
+]
+unfixable = ["COM818"]
+
 [tool.ruff.lint.per-file-ignores]
 "polarrouteserver/settings/*" = [
     "F403", # allow from .. import * in settings modules
