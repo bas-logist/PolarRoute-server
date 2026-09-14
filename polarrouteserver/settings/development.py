@@ -1,5 +1,6 @@
-from .base import *
 import socket
+
+from .base import *
 
 logger = logging.getLogger(__name__)
 
