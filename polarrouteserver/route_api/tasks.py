@@ -324,9 +324,11 @@ def open_gzipped_file(file_path: str | Path, mode="rt"):
     if file_path.startswith("s3://"):
         fs = _get_s3_filesystem()
         # s3fs.open returns a file-like object compatible with gzip
-        with fs.open(file_path, mode=mode.replace("t", "b")) as f:
-            with gzip.open(f, mode=mode) as gz_f:
-                yield gz_f
+        with (
+            fs.open(file_path, mode=mode.replace("t", "b")) as f,
+            gzip.open(f, mode=mode) as gz_f,
+        ):
+            yield gz_f
     else:
         # Standard local file opening
         with gzip.open(file_path, mode=mode) as gz_f:
