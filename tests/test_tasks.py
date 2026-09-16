@@ -9,13 +9,14 @@ import warnings
 
 from celery.exceptions import Ignore
 from django.conf import settings
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase, TransactionTestCase, override_settings
 import pytest
+import s3fs
 import yaml
 
 from polarrouteserver.celery import app
 from polarrouteserver.route_api.models import Mesh, Route
-from polarrouteserver.route_api.tasks import import_new_meshes, optimise_route, cleanup_routes, cleanup_meshes
+from polarrouteserver.route_api.tasks import import_new_meshes, optimise_route, cleanup_routes, cleanup_meshes, _get_s3_filesystem
 from polarrouteserver.route_api.utils import calculate_md5
 from .utils import add_test_mesh_to_db
 
@@ -117,7 +118,12 @@ class TestTaskStatus(TransactionTestCase):
             task = optimise_route.delay(self.out_of_mesh_route.id)
             assert task.state == "FAILURE"
 
-class TestImportNewMeshes(TestCase):
+@pytest.mark.usefixtures("tmp_path")
+class ImportNewMeshesCommon(TestCase):
+
+    @pytest.fixture(autouse=True)
+    def _capture_tmp_path(self, tmp_path: Path):
+        self.tmp_path = tmp_path
 
     def setUp(self):
 
@@ -125,9 +131,9 @@ class TestImportNewMeshes(TestCase):
         self.metadata_filepath = Path(settings.MESH_DIR, self.metadata_filename)
 
         self.mesh_filenames = ["southern_test_mesh.vessel_20240807T091201.json",
-                               "central_test_mesh.vessel.json"]
+                                "central_test_mesh.vessel.json"]
         
-        dummy_mesh_json = [{
+        self.dummy_mesh_json = [{
                 "config": {
                     "mesh_info": {
                         "region": {
@@ -155,21 +161,18 @@ class TestImportNewMeshes(TestCase):
             }}}}]
 
         for i, filename in enumerate(self.mesh_filenames):
-            # write out gzipped file
-            with gzip.open(Path(settings.MESH_DIR, filename+".gz"), 'wb') as f:
-                f.write(json.dumps(dummy_mesh_json[i]).encode('utf-8'))
-            # also write out non zipped file just for calclating md5
-            with open(Path(settings.MESH_DIR, filename), 'w') as f:
-                json.dump(dummy_mesh_json[i], f, indent=4)
+            # write out non zipped file just for calclating md5
+            with open(Path(self.tmp_path, filename), 'w') as f:
+                json.dump(self.dummy_mesh_json[i], f, indent=4)
 
-        # create minimal test metadata file
+        # create minimal test metadata
         self.metadata = {
             "records": [
                 {   
-                    "filepath": str(Path(settings.MESH_DIR, self.mesh_filenames[0])),
+                    "filepath": str(Path(self.tmp_path, self.mesh_filenames[0])),
                     "created": "20241016T154603",
                     "size": 123456,
-                    "md5": calculate_md5(str(Path(settings.MESH_DIR, self.mesh_filenames[0]))),
+                    "md5": calculate_md5(str(Path(self.tmp_path, self.mesh_filenames[0]))),
                     "meshiphi": "2.1.13",
                     "latlong": {
                         "latmin": -80.0,
@@ -179,10 +182,10 @@ class TestImportNewMeshes(TestCase):
                     }
                 },
                 {   
-                    "filepath": str(Path(settings.MESH_DIR, self.mesh_filenames[1])),
+                    "filepath": str(Path(self.tmp_path, self.mesh_filenames[1])),
                     "created": "20241016T155252",
                     "size": 123456,
-                    "md5": calculate_md5(str(Path(settings.MESH_DIR, self.mesh_filenames[1]))),
+                    "md5": calculate_md5(str(Path(self.tmp_path, self.mesh_filenames[1]))),
                     "meshiphi": "2.1.13",
                     "latlong": {
                         "latmin": -60.0,
@@ -194,21 +197,7 @@ class TestImportNewMeshes(TestCase):
             ]
         }
 
-        with open(self.metadata_filepath, 'w') as f:
-            yaml.dump(self.metadata, f)
-
-        with open(self.metadata_filepath, 'rb') as f_in:
-            with gzip.open(Path(settings.MESH_DIR, self.metadata_filename+".gz"), 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-
-
-    def tearDown(self):
-        # cleanup files created for testing
-        for filename in self.mesh_filenames + [self.metadata_filename]:
-            os.remove(Path(settings.MESH_DIR, filename))
-            os.remove(Path(settings.MESH_DIR, filename+".gz"))
-        
-
+    
     def test_import_new_meshes(self):
         
         with warnings.catch_warnings():
@@ -230,6 +219,71 @@ class TestImportNewMeshes(TestCase):
 
         all_meshes2 = Mesh.objects.all()
         assert list(all_meshes) == list(all_meshes2)
+
+    # disable running tests for this method in this class, it's meant to be inherited by the TestImportNewMeshes classes so they both run the same test
+    # parameterization would be better but it's complicated in this case
+    test_import_new_meshes.__test__ = False
+
+class TestImportNewMeshes(ImportNewMeshesCommon):
+
+    def setUp(self):
+        super().setUp()
+       
+        for i, filename in enumerate(self.mesh_filenames):
+            # write out gzipped file
+            with gzip.open(Path(settings.MESH_DIR, filename+".gz"), 'wb') as f:
+                f.write(json.dumps(self.dummy_mesh_json[i]).encode('utf-8'))
+
+        with open(self.metadata_filepath, 'w') as f:
+            yaml.dump(self.metadata, f)
+
+        with open(self.metadata_filepath, 'rb') as f_in:
+            with gzip.open(Path(settings.MESH_DIR, self.metadata_filename+".gz"), 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+
+    def tearDown(self):
+
+        # cleanup files created for testing
+        for filename in self.mesh_filenames + [self.metadata_filename]:
+            os.remove(Path(settings.MESH_DIR, filename+".gz"))
+    
+
+@pytest.mark.usefixtures("s3_mock")
+@override_settings(MESH_DIR="s3://mock-s3-bucket", MESH_METADATA_DIR="s3://mock-s3-bucket")
+class TestImportNewMeshesFromS3(ImportNewMeshesCommon):
+
+    def setUp(self):
+        super().setUp()
+
+        self.fs = _get_s3_filesystem()
+
+        # Clear cached filesystem instances to avoid state leak
+        s3fs.S3FileSystem.clear_instance_cache()
+
+        # Set up test bucket and files inside mock S3
+        self.fs.mkdir(settings.MESH_DIR[5:] if settings.MESH_DIR.startswith("s3://") else settings.MESH_DIR,
+                          CreateBucketConfiguration={'LocationConstraint': settings.S3_REGION})
+
+        for i, filename in enumerate(self.mesh_filenames):
+            # write out gzipped file
+            self._write_gz(f"{settings.MESH_DIR}/{filename}.gz", json.dumps(self.dummy_mesh_json[i]).encode('utf-8'))
+
+        self._write(f"{settings.MESH_METADATA_DIR}/{self.metadata_filename}", yaml.safe_dump(self.metadata, sort_keys=False, indent=4))
+        self._write_gz(f"{settings.MESH_METADATA_DIR}/{self.metadata_filename}.gz", yaml.safe_dump(self.metadata, sort_keys=False, indent=4).encode('utf-8'))
+
+        
+
+    def _write(self, path: str, content: str):
+        """Helper method to write files to S3."""
+        with self.fs.open(path, "w") as f:
+            f.write(content)
+
+    def _write_gz(self, path: str, content: str):
+        """Helper method to write gzipped files to S3."""
+        with self.fs.open(path, "wb") as f:
+            with gzip.open(f, "wb") as gz:
+                gz.write(content)
+
 
 class TestRouteCleanup(TestCase):
 
