@@ -15,7 +15,7 @@ dynamic = ["version"]
 requires-python = ">= 3.10"
 dependencies = [
     "celery",
-    "Django~=6.0",
+    "Django~=6.1",
     "django-celery-beat",
     "django-celery-results",
     "django-cors-headers",
