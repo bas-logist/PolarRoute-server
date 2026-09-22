@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.12", "3.13", "3.14"]
 
     steps:
     - uses: actions/checkout@v4
@@ -48,10 +48,10 @@ jobs:
       
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python 3.12 for coverage
+    - name: Set up Python 3.14 for coverage
       uses: actions/setup-python@v3
       with:
-        python-version: 3.12
+        python-version: 3.14
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
