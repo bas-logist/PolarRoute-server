@@ -28,9 +28,9 @@ jobs:
         python-version: ["3.12", "3.13", "3.14"]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -47,9 +47,9 @@ jobs:
       pull-requests: write
       
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.14 for coverage
-      uses: actions/setup-python@v3
+    - uses: actions/checkout@v7
+    - name: Set up Python for coverage
+      uses: actions/setup-python@v7
       with:
         python-version: 3.14
     - name: Install dependencies
@@ -70,8 +70,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: astral-sh/ruff-action@v3
+    - uses: actions/checkout@v7
+    - uses: astral-sh/ruff-action@v4.1.0
     - run: ruff check --fix
     - run: ruff format
     
