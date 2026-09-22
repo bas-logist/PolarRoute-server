@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Upgraded
+- Django 5.2 to Django 6.1
+
+### Removed
+- Support for Python < 3.12
+
 ### Added
 - `/health/` endpoint and `HEALTHCHECK` in the Docker container. 
 - Docker production and development settings modules.
