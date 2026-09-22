@@ -48,7 +48,7 @@ jobs:
       
     steps:
     - uses: actions/checkout@v7
-    - name: Set up Python 3.12 for coverage
+    - name: Set up Python for coverage
       uses: actions/setup-python@v7
       with:
         python-version: 3.14
