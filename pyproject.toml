@@ -12,10 +12,10 @@ description = "Backend server for serving PolarRoute and MeshiPhi assets and man
 readme = "README.md"
 license = {file = "LICENSE"}
 dynamic = ["version"]
-requires-python = ">= 3.10"
+requires-python = ">= 3.12"
 dependencies = [
     "celery",
-    "Django>=5.2,<6",
+    "Django~=6.1",
     "django-celery-beat",
     "django-celery-results",
     "django-cors-headers",
