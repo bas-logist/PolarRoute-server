@@ -1,3 +1,5 @@
+import socket
+
 from .base import *
 
 logger = logging.getLogger(__name__)
@@ -12,9 +14,8 @@ INTERNAL_IPS = [
     "127.0.0.1",
 ]
 
-# required for correct INTERNAL_IPS setting in docker container
-import socket #noqa
 
+# required for correct INTERNAL_IPS setting in docker container
 hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
 INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
 
