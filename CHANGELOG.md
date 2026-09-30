@@ -9,12 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `/health/` endpoint and `HEALTHCHECK` in the Docker container. 
-- Added `route_type` parameter to `evaluate_route`, allowing user to specify the route type used in `route_calc`.
-- Added `route_type` parameter to the route evaluation API endpoint and updated API schema.
 
 ### Changed
-- Updated `evaluate_route` to call `route_calc` using keyword arguments.
-- Restricted `polar-route` dependency to `>=1.1.10`.
+- Updated `evaluate_route` to pass the route geojson directly to `route_calc`, removing the manual DataFrame construction and temporary file handling. Requires a version of `polar-route` in which `route_calc` accepts a route geojson (currently unreleased).
+- Pointed the `polar-route` dependency at `git+https://github.com/bas-logist/PolarRoute.git@main` until a release including the geojson-accepting `route_calc` is available.
 - Docker production and development settings modules.
 - `compose.prod.yml` for modifying the compose config for production.
 - Re-worked docker container to create a production build-stage.

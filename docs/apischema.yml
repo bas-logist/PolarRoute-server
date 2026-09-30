@@ -785,15 +785,6 @@ components:
           type: integer
           nullable: true
           description: 'Optional: Custom mesh ID to use for evaluation.'
-        route_type:
-          allOf:
-          - $ref: '#/components/schemas/RouteTypeEnum'
-          default: smoothed
-          description: |-
-            Type of route calculation: 'dijkstra' or 'smoothed'. Defaults to 'smoothed'.
-
-            * `dijkstra` - dijkstra
-            * `smoothed` - smoothed
       required:
       - route
     RouteEvaluationResponse:
@@ -809,14 +800,6 @@ components:
       required:
       - evaluation_results
       - polarrouteserver-version
-    RouteTypeEnum:
-      enum:
-      - dijkstra
-      - smoothed
-      type: string
-      description: |-
-        * `dijkstra` - dijkstra
-        * `smoothed` - smoothed
     StatusEnum:
       enum:
       - PENDING

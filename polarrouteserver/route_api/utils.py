@@ -2,7 +2,6 @@ import hashlib
 import logging
 
 import haversine
-import pandas as pd
 from django.conf import settings
 from polar_route.route_calc import route_calc
 from polar_route.utils import convert_decimal_days
@@ -166,8 +165,8 @@ def calculate_md5(filename):
     return hash_md5.hexdigest()
 
 
-def evaluate_route(route_json: dict, mesh: Mesh, route_type: str = "smoothed") -> dict:
-    """Run calculate_route method from PolarRoute to evaluate the fuel usage and travel time of a route.
+def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
+    """Run route_calc method from PolarRoute to evaluate the fuel usage and travel time of a route.
 
     Args:
         route_json (dict): route to evaluate in geojson format.
@@ -177,47 +176,16 @@ def evaluate_route(route_json: dict, mesh: Mesh, route_type: str = "smoothed") -
         dict: evaluated route
     """
 
-    if route_json["features"][0].get("properties", None) is None:
-        route_json["features"][0]["properties"] = {"from": "Start", "to": "End"}
+    properties = route_json["features"][0].get("properties")
+    if properties is None:
+        properties = route_json["features"][0]["properties"] = {}
+    properties.setdefault("from", "Start")
+    properties.setdefault("to", "End")
 
     try:
-        # Extract all coordinates from the route (not just start/end)
-        coordinates = route_json["features"][0]["geometry"]["coordinates"]
-        properties = route_json["features"][0]["properties"]
-
-        # Preserve waypoint names from the route's properties if present,
-        # falling back to generic names otherwise.
-        from_wp = properties.get("from") or "waypoint_0"
-        to_wp = properties.get("to") or f"waypoint_{len(coordinates)-1}"
-
-        # Create DataFrame with all waypoints along the route. Intermediate
-        # waypoints are given generic names since GeoJSON LineString
-        # coordinates don't carry per-point names.
-        df_data = []
-        for i, coord in enumerate(coordinates):
-            if i == 0:
-                name = from_wp
-            elif i == len(coordinates) - 1:
-                name = to_wp
-            else:
-                name = f"waypoint_{i}"
-
-            df_data.append(
-                {
-                    "Lat": coord[1],  # lat
-                    "Long": coord[0],  # lon
-                    "Name": name,
-                    "order": i,
-                    "id": 1,  # All waypoints belong to the same route/track
-                }
-            )
-
-        df = pd.DataFrame(df_data)
-
-        # Use route_calc with the new API: (df, from_wp, to_wp, mesh, route_type)
-        calc_route = route_calc(
-            df=df, from_wp=from_wp, to_wp=to_wp, mesh=mesh.json, route_type=route_type
-        )
+        # route_calc accepts the route geojson directly, reading waypoint names
+        # and route type from its properties.
+        calc_route = route_calc(route_json, mesh=mesh.json)
 
         # Extract time and fuel information
         time_days = calc_route["features"][0]["properties"]["traveltime"][-1]
