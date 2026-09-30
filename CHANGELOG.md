@@ -15,8 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated `evaluate_route` to pass the route geojson directly to `route_calc`, removing the manual DataFrame construction and temporary file handling. Requires a version of `polar-route` in which `route_calc` accepts a route geojson (currently unreleased).
 - Pointed the `polar-route` dependency at `git+https://github.com/bas-logist/PolarRoute.git@main` until a release including the geojson-accepting `route_calc` is available.
-- Docker production and development settings modules.
-- `compose.prod.yml` for modifying the compose config for production.
 - Re-worked docker container to create a production build-stage.
 - Added static file collection to the docker entrypoint script.
 - A number of syntax changes throughout to comply with default rules enabled in ruff >0.16.
