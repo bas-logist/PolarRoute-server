@@ -188,7 +188,7 @@ def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
         time_str = convert_decimal_days(time_days)
         fuel = round(calc_route["features"][0]["properties"]["fuel"][-1], 2)
 
-    except Exception:  # noqa BLE001
+    except Exception:
         logger.exception("Error in evaluate_route")
         return None
 
