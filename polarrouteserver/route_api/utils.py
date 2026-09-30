@@ -188,11 +188,8 @@ def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
         time_str = convert_decimal_days(time_days)
         fuel = round(calc_route["features"][0]["properties"]["fuel"][-1], 2)
 
-    except Exception as e:  # noqa BLE001
-        logger.error(f"Error in evaluate_route: {type(e).__name__}: {e}")
-        import traceback
-
-        logger.error(f"Full traceback: {traceback.format_exc()}")
+    except Exception:  # noqa BLE001
+        logger.exception("Error in evaluate_route")
         return None
 
     return {
