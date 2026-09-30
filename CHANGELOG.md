@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `/health/` endpoint and `HEALTHCHECK` in the Docker container. 
+- `/health/` endpoint and `HEALTHCHECK` in the Docker container.
+- Docker production and development settings modules.
+- `compose.prod.yml` for modifying the compose config for production.
 
 ### Changed
 - Updated `evaluate_route` to pass the route geojson directly to `route_calc`, removing the manual DataFrame construction and temporary file handling. Requires a version of `polar-route` in which `route_calc` accepts a route geojson (currently unreleased).

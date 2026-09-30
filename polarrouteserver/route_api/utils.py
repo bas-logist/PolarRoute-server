@@ -183,11 +183,7 @@ def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
     properties.setdefault("to", "End")
 
     try:
-        # route_calc accepts the route geojson directly, reading waypoint names
-        # and route type from its properties.
         calc_route = route_calc(route_json, mesh=mesh.json)
-
-        # Extract time and fuel information
         time_days = calc_route["features"][0]["properties"]["traveltime"][-1]
         time_str = convert_decimal_days(time_days)
         fuel = round(calc_route["features"][0]["properties"]["fuel"][-1], 2)
