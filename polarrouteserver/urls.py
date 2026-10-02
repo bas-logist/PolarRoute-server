@@ -6,12 +6,15 @@ from health_check.views import HealthCheckView
 from rest_framework.routers import DefaultRouter
 
 from polarrouteserver.route_api import views
+from polarrouteserver.frontend.views import frontend_view
+
 
 # Create a router and register our ViewSets with it.
 router = DefaultRouter()
 router.register(r"locations", views.LocationViewSet, basename="location")
 
 urlpatterns = [
+    path("", frontend_view, name="frontend_home"),
     path("admin/", admin.site.urls),
     path("api/", include(router.urls)),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

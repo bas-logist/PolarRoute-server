@@ -138,3 +138,7 @@ GitHub.sublime-settings
 # Visual Studio Code # 
 .vscode/* 
 .history
+
+
+# node
+*/node_modules/*

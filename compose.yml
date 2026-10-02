@@ -15,6 +15,7 @@ services:
       POLARROUTE_DB_PORT: 5432
       POLARROUTE_SUPERUSER_USERNAME: admin
       POLARROUTE_SUPERUSER_PASSWORD: password
+      POLARROUTE_FRONTEND_ENABLED: true
     entrypoint: /usr/src/app/docker-entrypoint.sh
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
     volumes:
@@ -57,7 +58,7 @@ services:
       - rabbitmq
 
   rabbitmq:
-    image: rabbitmq
+    image: rabbitmq:3.13-management
     ports:
       - 5672:5672
       - 15672:15672

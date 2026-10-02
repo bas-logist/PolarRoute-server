@@ -26,6 +26,12 @@ CLEANUP_ROUTES_DAYS = int(os.getenv("POLARROUTE_CLEANUP_ROUTES_DAYS", "365"))
 CLEANUP_MESHES = os.getenv("POLARROUTE_CLEANUP_MESHES", "False").lower() == "true"
 CLEANUP_MESHES_DAYS = int(os.getenv("POLARROUTE_CLEANUP_MESHES_DAYS", "365"))
 
+# Frontend switch environment variable
+POLARROUTE_FRONTEND_ENABLED = (
+    os.getenv("POLARROUTE_FRONTEND_ENABLED", "True").lower() == "true"
+)
+
+
 # FIXTURE_DIRS = []
 
 # NOTE: set this in production
@@ -100,6 +106,7 @@ INSTALLED_APPS = [
     "drf_spectacular_sidecar",
     "taggit",
     "polarrouteserver.route_api",
+    "polarrouteserver.frontend",
     "corsheaders",
     "health_check",
 ]
@@ -202,6 +209,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 STATIC_URL = "static/"
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "polarrouteserver", "frontend", "static"),
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

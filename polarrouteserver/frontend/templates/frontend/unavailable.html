@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorry, service is unavailable - PolarRoute</title>
+    <!-- BAS Style Kit 0.7.4 CSS -->
+    <link rel="stylesheet" href="https://style-kit.web.bas.ac.uk/0.7.4/css/bas-style-kit.min.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f8;
+            color: #333333;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .unavailable-container {
+            max-width: 600px;
+            background: #ffffff;
+            border: 1px solid #d0d7de;
+            border-top: 4px solid #002B49;
+            border-radius: 4px;
+            padding: 40px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #002B49;
+            font-size: 1.8rem;
+            margin-top: 0;
+        }
+        .bsk-lead {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #555555;
+            margin: 20px 0;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid #e2e8ee;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <main class="unavailable-container">
+        <h1>Sorry, <em>PolarRoute</em> is unavailable</h1>
+        <hr>
+        <p class="bsk-lead">The frontend dashboard is currently disabled via server configuration.</p>
+        <p>You will be able to use the service once enabled by the administrator, or access the REST API endpoints directly via <a href="/api/schema/swagger-ui/">Swagger UI</a>.</p>
+        <hr>
+        <p>Contact the <a href="mailto:servicedesk.bas.ac.uk">BAS IT Service Desk</a> or <a href="https://www.bas.ac.uk/team/operational-teams/operational-delivery/field-planning-science-support/">Polar Operations Support Team</a> for more information.</p>
+    </main>
+</body>
+</html>

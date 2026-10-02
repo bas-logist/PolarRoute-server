@@ -1,0 +1,1128 @@
+/*
+ * App layout and the few styles the BAS Style Kit doesn't provide.
+ * Colours and fonts come from the Style Kit's CSS variables (BAS Style Kit, loaded by vite-plugins/basStyleKit.js).
+ */
+
+/* Theme tokens: light by default, overridden for [data-theme='dark'] at the end of this file. */
+:root {
+    --app-bg: #fff;
+    --app-text: var(--bsk-dark-blue);
+    --heading: var(--bsk-dark-blue);
+    --muted: var(--bsk-dark-grey);
+    --panel-bg: #fff;
+    --card-bg: var(--color-gray-200);
+    --border: var(--bsk-light-grey);
+    --input-bg: #fff;
+    --input-border: var(--bsk-grey);
+    --tab-bg: var(--bsk-seasalt);
+    --tab-text: var(--bsk-blue);
+    --tab-selected-border: var(--bsk-blue);
+    --error: var(--color-red-700);
+    --info: var(--color-sky-700);
+    --map-sea: #d6e6f1;
+    --map-land: #f6f3ea;
+    --map-coast: var(--bsk-blue);
+    --map-route-traveltime: #2563eb;
+    --map-route-fuel: #c2570c;
+    --map-control-bg: #fff;
+    --header-select-bg: #fff;
+    --header-select-text: var(--bsk-dark-blue);
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: var(--app-bg);
+    color: var(--app-text);
+}
+
+.app-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh; /* excludes mobile browser toolbars */
+    overflow: hidden;
+}
+
+/* Header: Style Kit header/standard header pattern, compact for a full-screen map application */
+/* The Style Kit styles every <header> element (colour, size, margins), so reset those here */
+.app-header {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 3000;
+    margin: 0;
+    padding: 0.5rem max(1.5rem, env(safe-area-inset-right)) 0.5rem max(1.5rem, env(safe-area-inset-left));
+    font-size: 1rem;
+    color: var(--color-neutral-50);
+}
+
+.app-header a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.app-header-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+}
+
+.app-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.app-header-logo img {
+    display: block;
+    height: 32px;
+    width: auto;
+}
+
+.app-header-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.app-header-name:hover,
+.bas-menu-toggle:hover,
+.bas-menu-list a:hover {
+    background-color: var(--bsk-dark-blue-hover);
+}
+
+.app-header-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.header-menu-toggle {
+    display: none;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.header-menu-toggle:hover {
+    background-color: var(--bsk-dark-blue-hover);
+}
+
+.header-menu-toggle[aria-expanded='true'] {
+    border-color: var(--bsk-light-blue);
+}
+
+.header-field label {
+    margin-right: 0.35rem;
+}
+
+.header-select {
+    max-width: 22rem;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    background-color: var(--header-select-bg);
+    color: var(--header-select-text);
+}
+
+.theme-toggle {
+    padding: 0.35rem 0.6rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.theme-toggle:hover {
+    background-color: var(--bsk-dark-blue-hover);
+    text-decoration: underline;
+}
+
+.theme-toggle[aria-pressed='true'] {
+    border-color: var(--bsk-light-blue);
+}
+
+.status-dot {
+    display: inline-block;
+    height: 0.65rem;
+    width: 0.65rem;
+    margin-right: 0.35rem;
+    border-radius: 50%;
+    background-color: var(--color-green-500);
+}
+
+.bas-menu {
+    position: relative;
+}
+
+.bas-menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.bas-menu-toggle:hover {
+    text-decoration: underline;
+}
+
+.bas-menu-caret {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-left: 0.25rem;
+    transition: transform 0.2s;
+}
+
+.bas-menu-caret--open {
+    transform: rotate(180deg);
+}
+
+.bas-menu-list {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 3100;
+    min-width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.5rem 0.5rem;
+    border-radius: 0 0 0.5rem 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+}
+
+.bas-menu-list a {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+}
+
+/* Footer: slim variant of the Style Kit footer */
+.app-footer {
+    flex-shrink: 0;
+    padding: 0.5rem max(1.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-left));
+    font-size: 0.8rem;
+}
+
+.app-footer a {
+    color: inherit;
+}
+
+.app-footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1.5rem;
+}
+
+/* Main layout */
+.main-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.sidebar {
+    width: clamp(320px, 34vw, 400px);
+    background: var(--panel-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    z-index: 1000;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar .bsk-tabs-nav .bsk-tabs {
+    display: flex;
+    background: var(--tab-bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.sidebar .bsk-tabs-nav .bsk-tabs .bsk-tab-btn {
+    flex: 1;
+    padding: 0.6rem 0.25rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    background: none;
+    color: var(--tab-text);
+    border-color: var(--border);
+}
+
+.sidebar .bsk-tabs-nav .bsk-tabs .bsk-tab-btn[aria-selected='true'] {
+    background: var(--panel-bg);
+    font-weight: 600;
+    border-color: var(--tab-selected-border);
+    border-bottom-color: var(--panel-bg);
+}
+
+.tab-busy-dot {
+    color: var(--info);
+    font-size: 0.7rem;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem;
+}
+
+.map-pane {
+    flex: 1;
+    height: 100%;
+    position: relative;
+}
+
+.map-container {
+    flex: 1;
+    height: 100%;
+    position: relative;
+}
+
+.map-pick-banner {
+    position: absolute;
+    bottom: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1100;
+    width: max-content;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: calc(100% - 1.5rem);
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    background: var(--panel-bg);
+    color: var(--app-text);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.view-switch {
+    display: none;
+}
+
+.map-container--picking .leaflet-container,
+.map-container--picking .leaflet-grab,
+.map-container--picking .leaflet-interactive {
+    cursor: crosshair !important;
+}
+
+/* Map: sea is the container background, land is shaded, and the coastline is drawn on top */
+.leaflet-container {
+    background: var(--map-sea);
+}
+
+.map-land {
+    fill: var(--map-land);
+    fill-opacity: 1;
+    stroke: var(--map-land);
+}
+
+.map-coast {
+    fill: none;
+    stroke: var(--map-coast);
+}
+
+/* One colour per optimisation type; the fuel route is also dashed so the two differ without colour */
+.map-route {
+    fill: none;
+    stroke-opacity: 0.9;
+}
+
+.map-route--traveltime {
+    stroke: var(--map-route-traveltime);
+}
+
+.map-route--fuel {
+    stroke: var(--map-route-fuel);
+    stroke-dasharray: 10 7;
+}
+
+.route-arrow-icon {
+    background: none;
+    border: 0;
+}
+
+.route-arrow {
+    display: block;
+    width: 18px;
+    height: 18px;
+    stroke: #fff;
+    stroke-width: 1;
+    stroke-linejoin: round;
+}
+
+.route-arrow--traveltime { fill: var(--map-route-traveltime); }
+.route-arrow--fuel { fill: var(--map-route-fuel); }
+
+.map-overlays {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    max-width: calc(100% - 4.5rem);
+    max-height: calc(100% - 1.5rem);
+    overflow-y: auto;
+}
+
+.route-legend {
+    max-width: 15rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    background: var(--panel-bg);
+    color: var(--app-text);
+    font-size: 0.85rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.route-legend ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.route-legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.route-legend p {
+    margin: 0.35rem 0 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.route-legend-swatch {
+    display: inline-block;
+    width: 2.5rem;
+    height: 0.75rem;
+    margin-right: 0.35rem;
+    vertical-align: middle;
+    overflow: visible;
+}
+
+.route-legend-line {
+    stroke-width: 3;
+}
+
+.route-legend-swatch--traveltime .route-legend-line { stroke: var(--map-route-traveltime); }
+.route-legend-swatch--traveltime .route-legend-arrow { fill: var(--map-route-traveltime); }
+.route-legend-swatch--fuel .route-legend-line { stroke: var(--map-route-fuel); stroke-dasharray: 7 5; }
+.route-legend-swatch--fuel .route-legend-arrow { fill: var(--map-route-fuel); }
+.route-legend-arrow { stroke: #fff; stroke-width: 0.8; }
+
+.leaflet-bar a,
+.leaflet-bar a:hover {
+    background-color: var(--map-control-bg);
+    color: var(--app-text);
+    border-bottom-color: var(--border);
+}
+
+.leaflet-tooltip {
+    background-color: var(--panel-bg);
+    color: var(--app-text);
+    border-color: var(--border);
+}
+
+.leaflet-tooltip-top::before {
+    border-top-color: var(--panel-bg);
+}
+
+/* Cards */
+.bsk-card {
+    margin-bottom: 1rem;
+}
+
+.bsk-card.bg-gray-200 {
+    background-color: var(--card-bg);
+    color: var(--app-text);
+}
+
+.bsk-card.bg-gray-200 header {
+    color: var(--heading);
+}
+
+.sidebar .bsk-card header {
+    font-size: 1.15rem;
+}
+
+.card-header {
+    font-weight: 600;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.bsk-card-success .card-header {
+    border-bottom-color: rgba(255, 255, 255, 0.5);
+}
+
+.card-hint {
+    font-size: 0.85rem;
+}
+
+.route-result {
+    margin-top: 1.25rem;
+}
+
+
+.vessel-details {
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.route-result-name {
+    margin: 0 0 0.5rem;
+    font-weight: 600;
+}
+
+.route-result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.route-result-table th,
+.route-result-table td {
+    padding: 0.25rem 0.25rem 0.25rem 0;
+    text-align: left;
+    vertical-align: top;
+    font-weight: 400;
+}
+
+.route-result-table tbody th {
+    font-weight: 600;
+}
+
+.route-result-table thead th {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.route-result-note {
+    margin: 0.5rem 0 0;
+    font-size: 0.85rem;
+}
+
+.vessel-details ul {
+    padding-left: 1rem;
+    margin: 0.25rem 0;
+    list-style: disc;
+}
+
+/* Forms */
+.form-input {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--input-border);
+    border-radius: 0.25rem;
+    background-color: var(--input-bg);
+    color: var(--app-text);
+}
+
+.sidebar fieldset {
+    padding-bottom: 0.25rem;
+}
+
+.coordinate-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 0.75rem;
+}
+
+.field-help {
+    margin: 0.25rem 0 0.5rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.field-error {
+    margin: 0.25rem 0 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Query states */
+.state-message {
+    color: var(--muted);
+}
+
+.state-message--center {
+    text-align: center;
+    padding: 1.25rem;
+}
+
+.state-message--error {
+    color: var(--error);
+    font-weight: 600;
+}
+
+/* List items (saved locations, recent routes, jobs) */
+.list-item {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+    background: var(--panel-bg);
+    margin-bottom: 0.6rem;
+}
+
+.list-item--success { border-left: 4px solid var(--color-green-700); }
+.list-item--info { border-left: 4px solid var(--info); }
+.list-item--danger { border-left: 4px solid var(--color-red-700); }
+.list-item--default { border-left: 4px solid var(--bsk-grey); }
+
+.list-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.list-item-title {
+    font-weight: 600;
+    color: var(--heading);
+}
+
+.list-item-meta {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.list-item-meta--spaced {
+    margin-top: 0.25rem;
+}
+
+.list-item-actions {
+    margin-top: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Dark theme: the Style Kit has no dark mode, so these override its light component colours */
+:root[data-theme='dark'] {
+    color-scheme: dark;
+    --app-bg: #0e1820;
+    --app-text: #e3ebf1;
+    --heading: #f2f6f9;
+    --muted: #b4c3ce;
+    --panel-bg: #14212b;
+    --card-bg: #1f303c;
+    --border: #35495a;
+    --input-bg: #0e1820;
+    --input-border: #6f8799;
+    --tab-bg: #0e1820;
+    --tab-text: #9fd0ee;
+    --tab-selected-border: #5fa6d1;
+    --error: #ff9b9b;
+    --info: #7cc4ee;
+    --map-sea: #0a141c;
+    --map-land: #1d2c37;
+    --map-coast: #6aa8cd;
+    --map-route-traveltime: #7fb2ff;
+    --map-route-fuel: #ffa45c;
+    --map-control-bg: #14212b;
+    --header-select-bg: #0e1820;
+    --header-select-text: #e3ebf1;
+}
+
+:root[data-theme='dark'] .header-select {
+    border-color: var(--input-border);
+}
+
+:root[data-theme='dark'] .bsk-has-error label,
+:root[data-theme='dark'] .bsk-has-error p {
+    color: var(--error);
+}
+
+:root[data-theme='dark'] .bsk-has-error input {
+    border-color: var(--error);
+    outline-color: var(--error);
+}
+
+:root[data-theme='dark'] .bsk-btn-primary {
+    border: 1px solid var(--tab-selected-border);
+}
+
+:root[data-theme='dark'] code {
+    color: #9fd0ee;
+}
+
+/* Location name combobox */
+.combobox {
+    position: relative;
+}
+
+.combobox-input {
+    padding-right: 2.25rem;
+}
+
+.combobox-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 2.25rem;
+    border-radius: 0 0.25rem 0.25rem 0;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.combobox-toggle:hover {
+    color: var(--app-text);
+}
+
+.combobox-list {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    z-index: 50;
+    max-height: 15rem;
+    overflow-y: auto;
+    margin: 0.15rem 0 0;
+    padding: 0.25rem 0;
+    list-style: none;
+    border: 1px solid var(--input-border);
+    border-radius: 0.25rem;
+    background: var(--panel-bg);
+    color: var(--app-text);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+.combobox-option {
+    display: flex;
+    flex-direction: column;
+    padding: 0.4rem 0.75rem;
+    cursor: pointer;
+}
+
+.combobox-option--active {
+    background: var(--bsk-light-blue);
+    color: var(--bsk-dark-blue);
+}
+
+.combobox-option-meta {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.combobox-option--active .combobox-option-meta {
+    color: var(--bsk-dark-blue);
+}
+
+.combobox-empty {
+    padding: 0.4rem 0.75rem;
+    color: var(--muted);
+}
+
+/*
+ * Responsive layout
+ *   >= 1440px  full header; sidebar beside the map
+ *   <  1440px  header controls move behind a Menu button
+ *   <   768px  sidebar and map are shown one at a time (see ViewSwitch); keep in step with MOBILE_QUERY
+ */
+@media (max-width: 1439px) {
+    .header-menu-toggle {
+        display: inline-flex;
+        align-items: center;
+        margin-left: auto;
+    }
+
+    .app-header-controls {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 3200;
+        flex-direction: column;
+        align-items: stretch;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        padding: 0.75rem max(1.5rem, env(safe-area-inset-right)) 1rem max(1.5rem, env(safe-area-inset-left));
+        background-color: var(--bsk-blue);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.35);
+    }
+
+    .app-header-controls--open {
+        display: flex;
+    }
+
+    .header-field {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .header-field label {
+        min-width: 5.5rem;
+        margin-right: 0;
+    }
+
+    .header-select {
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .theme-toggle,
+    .bas-menu-toggle {
+        justify-content: flex-start;
+        width: 100%;
+        text-align: left;
+    }
+
+    .bas-menu-list {
+        position: static;
+        margin: 0;
+        padding: 0 0 0 1rem;
+        box-shadow: none;
+        border-radius: 0;
+        background: none;
+    }
+}
+
+@media (max-width: 767px) {
+    .app-header,
+    .app-footer {
+        padding-left: max(1rem, env(safe-area-inset-left));
+        padding-right: max(1rem, env(safe-area-inset-right));
+    }
+
+    .main-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        flex: 1;
+        min-height: 0;
+        border-right: 0;
+        box-shadow: none;
+    }
+
+    .map-pane {
+        flex: 1;
+        min-height: 0;
+        height: auto;
+    }
+
+    .main-container[data-mobile-view='map'] .sidebar,
+    .main-container[data-mobile-view='panel'] .map-pane {
+        display: none;
+    }
+
+    .view-switch {
+        display: flex;
+        flex-shrink: 0;
+        gap: 0.5rem;
+        padding: 0.5rem max(1rem, env(safe-area-inset-right)) 0.5rem max(1rem, env(safe-area-inset-left));
+        background: var(--tab-bg);
+        border-top: 1px solid var(--border);
+    }
+
+    .view-switch .bsk-btn {
+        flex: 1;
+        min-height: 2.75rem;
+    }
+
+    .view-switch .bsk-btn[aria-pressed='true'] {
+        background-color: var(--bsk-blue);
+        color: var(--color-slate-50);
+        box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.3);
+        text-decoration: underline;
+    }
+
+    .sidebar-content {
+        padding: 0.75rem;
+    }
+
+    .coordinate-inputs {
+        gap: 0 0.5rem;
+    }
+
+    .combobox-list {
+        max-height: 40vh;
+    }
+
+    .app-footer {
+        font-size: 0.75rem;
+    }
+
+    .app-footer-inner {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .app-footer-inner span:nth-child(2) {
+        order: 3;
+        flex-basis: 100%;
+    }
+
+    .app-header-brand {
+        gap: 0.6rem;
+    }
+
+    .app-header-name {
+        font-size: 1.1rem;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .header-menu-toggle {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    .map-pick-banner {
+        font-size: 0.9rem;
+    }
+
+    .map-overlays {
+        top: 0.5rem;
+        right: 0.5rem;
+    }
+
+    .route-legend {
+        padding: 0.35rem 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .route-legend p {
+        display: none;
+    }
+}
+
+/* Short viewports (phones in landscape): give the map as much height as possible */
+@media (max-height: 500px) {
+    .app-header {
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+    }
+
+    .app-footer {
+        padding-top: 0.25rem;
+        padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+        font-size: 0.7rem;
+    }
+
+    .app-footer-inner {
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+}
+
+/* Touch screens: larger targets, and 16px inputs so iOS doesn't zoom in on focus */
+@media (pointer: coarse) {
+    .bsk-btn-xs {
+        padding: 0.6rem 0.9rem;
+        font-size: 0.9rem;
+    }
+
+    .sidebar .bsk-tabs-nav .bsk-tabs .bsk-tab-btn {
+        min-height: 2.75rem;
+    }
+
+    .form-input,
+    .header-select {
+        min-height: 2.75rem;
+        font-size: 1rem;
+    }
+
+    .header-menu-toggle,
+    .theme-toggle,
+    .bas-menu-toggle {
+        min-height: 2.75rem;
+    }
+
+    .combobox-toggle {
+        width: 2.75rem;
+    }
+
+    .combobox-option {
+        padding: 0.7rem 0.75rem;
+    }
+
+    .leaflet-touch .leaflet-bar a {
+        width: 2.75rem;
+        height: 2.75rem;
+        line-height: 2.75rem;
+    }
+}
+
+/* Sea ice concentration panel */
+.sea-ice-control {
+    width: 18rem;
+    max-width: 100%;
+    border-radius: 0.25rem;
+    background: var(--panel-bg);
+    color: var(--app-text);
+    font-size: 0.85rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.sea-ice-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sea-ice-body {
+    padding: 0 0.75rem 0.75rem;
+    border-top: 1px solid var(--border);
+}
+
+.sea-ice-layers {
+    margin: 0.5rem 0 0;
+    padding: 0;
+}
+
+.sea-ice-layers legend {
+    font-weight: 600;
+}
+
+.sea-ice-layer {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.sea-ice-layer input {
+    margin-top: 0.2rem;
+}
+
+.sea-ice-layer--off {
+    color: var(--muted);
+}
+
+.sea-ice-detail,
+.sea-ice-status,
+.sea-ice-control .sea-ice-credit,
+.sea-ice-control .sea-ice-caption {
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.sea-ice-note {
+    margin: 0.5rem 0 0;
+}
+
+.sea-ice-control .sea-ice-note--error {
+    color: var(--error);
+    font-weight: 600;
+}
+
+.sea-ice-day,
+.sea-ice-opacity {
+    margin-top: 0.6rem;
+}
+
+.sea-ice-day label,
+.sea-ice-opacity label {
+    display: block;
+    font-weight: 600;
+}
+
+.sea-ice-day-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.sea-ice-day-controls select {
+    flex: 1;
+    min-width: 0;
+    padding: 0.2rem 0.35rem;
+    border: 1px solid var(--input-border);
+    border-radius: 0.25rem;
+    background: var(--input-bg);
+    color: var(--app-text);
+}
+
+.sea-ice-opacity {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0 0.5rem;
+}
+
+.sea-ice-opacity label {
+    grid-column: 1 / -1;
+}
+
+.sea-ice-scale {
+    margin-top: 0.6rem;
+}
+
+.sea-ice-scale-bar {
+    height: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.15rem;
+}
+
+.sea-ice-scale-labels {
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 0.75rem;
+}
+
+.sea-ice-credit {
+    margin: 0.5rem 0 0;
+}
+
+.sea-ice-caption {
+    margin: 0;
+    font-size: 0.75rem;
+}
+
+.sea-ice-control p {
+    color: var(--app-text);
+}
+
+.sea-ice-key {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0.6rem 0 0;
+    font-size: 0.8rem;
+}
+
+.sea-ice-key-swatch {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.15rem;
+}
+
+/* Buttons with an icon and a label: line them up (the full Style Kit stylesheet leaves the icon sitting high) */
+.bsk-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35em;
+}
