@@ -54,7 +54,7 @@ def optimise_route(
         logger.info(f"Also got backup mesh ids {backup_mesh_ids}")
 
     # add warning on mesh date if older than today
-    if mesh.created.date() < datetime.datetime.now(tz=datetime.timezone.utc).date():
+    if mesh.created.date() < datetime.datetime.now(tz=datetime.UTC).date():
         route.info = {
             "info": f"Latest available mesh from {datetime.datetime.strftime(mesh.created, '%Y/%m/%d %H:%M%S')}"
         }
@@ -235,13 +235,13 @@ def import_new_meshes(self):
                 "name": mesh_filename,
                 "valid_date_start": datetime.datetime.strptime(
                     mesh_json["config"]["mesh_info"]["region"]["start_time"], "%Y-%m-%d"
-                ).replace(tzinfo=datetime.timezone.utc),
+                ).replace(tzinfo=datetime.UTC),
                 "valid_date_end": datetime.datetime.strptime(
                     mesh_json["config"]["mesh_info"]["region"]["end_time"], "%Y-%m-%d"
-                ).replace(tzinfo=datetime.timezone.utc),
+                ).replace(tzinfo=datetime.UTC),
                 "created": datetime.datetime.strptime(
                     record["created"], "%Y%m%dT%H%M%S"
-                ).replace(tzinfo=datetime.timezone.utc),
+                ).replace(tzinfo=datetime.UTC),
                 "json": mesh_json,
                 "meshiphi_version": record["meshiphi"],
                 "lat_min": record["latlong"]["latmin"],
