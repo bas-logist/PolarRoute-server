@@ -513,8 +513,41 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased]">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#030-2026-10-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.0 - 2026-10-26
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.3.0 - 2026-10-26">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#upgraded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgraded
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#added" class="md-nav__link">
@@ -762,7 +795,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed" class="md-nav__link">
+  <a href="#removed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -873,7 +906,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed_1" class="md-nav__link">
+  <a href="#removed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -3491,8 +3524,41 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased]">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#030-2026-10-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.0 - 2026-10-26
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.3.0 - 2026-10-26">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#upgraded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgraded
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#added" class="md-nav__link">
@@ -3740,7 +3806,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed" class="md-nav__link">
+  <a href="#removed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -3851,7 +3917,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed_1" class="md-nav__link">
+  <a href="#removed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -3984,6 +4050,15 @@
 <p>The format is based on <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>,
 and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h2 id="030-2026-10-26">0.3.0 - 2026-10-26<a class="headerlink" href="#030-2026-10-26" title="Permanent link">&para;</a></h2>
+<h3 id="upgraded">Upgraded<a class="headerlink" href="#upgraded" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Django 5.2 to Django 6.1</li>
+</ul>
+<h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Support for Python &lt; 3.12</li>
+</ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>/health/</code> endpoint and <code>HEALTHCHECK</code> in the Docker container. </li>
@@ -3995,6 +4070,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Re-worked docker container to create a production build-stage.</li>
 <li>Added static file collection to the docker entrypoint script.</li>
 <li>A number of syntax changes throughout to comply with default rules enabled in ruff &gt;0.16.</li>
+<li>Changed calls to <code>datetime.timezone.utc</code> to <code>datetime.UTC</code>.</li>
 </ul>
 <h2 id="027-2025-12-22">0.2.7 - 2025-12-22<a class="headerlink" href="#027-2025-12-22" title="Permanent link">&para;</a></h2>
 <h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
@@ -4069,7 +4145,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <ul>
 <li><code>request_route</code> utility now does not wait for the delay period before the first status request, only after receipt of a 'PENDING' job status.</li>
 </ul>
-<h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permanent link">&para;</a></h3>
+<h3 id="removed_1">Removed<a class="headerlink" href="#removed_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Support for python 3.9</li>
 <li>Support for Django &lt; 5.2</li>
@@ -4121,7 +4197,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Inconsistent error response formats across endpoints.</li>
 <li>Route cancellation bug where deletion didn't work properly.</li>
 </ul>
-<h3 id="removed_1">Removed<a class="headerlink" href="#removed_1" title="Permanent link">&para;</a></h3>
+<h3 id="removed_2">Removed<a class="headerlink" href="#removed_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Redundant "no mesh available" response variations - now unified.</li>
 <li>Separate route cancellation endpoint (moved to job endpoint).</li>
