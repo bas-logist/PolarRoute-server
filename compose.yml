@@ -88,7 +88,7 @@ services:
     profiles: ['s3']
     image: luofuxiang/local-s3
     ports:
-      - "127.0.0.1:8080:80"
+      - "127.0.0.1:8081:80"
     volumes:
       - "./s3_data:/data" # bind mount local directory to persist data
 
