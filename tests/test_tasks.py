@@ -197,32 +197,7 @@ class ImportNewMeshesCommon(TestCase):
             ]
         }
 
-    
-    def test_import_new_meshes(self):
-        
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", UserWarning)
-            meshes_added = import_new_meshes()
 
-        assert len(meshes_added) ==  len(self.mesh_filenames)
-
-        for mesh in meshes_added:
-            mesh_obj = Mesh.objects.get(id=mesh["id"])
-            assert mesh_obj.id  == mesh["id"]
-            assert mesh_obj.md5 == mesh["md5"]
-
-        all_meshes = Mesh.objects.all()
-
-        # run same meshes again and test not added again
-        meshes_added = import_new_meshes()
-        assert len(meshes_added) == 0
-
-        all_meshes2 = Mesh.objects.all()
-        assert list(all_meshes) == list(all_meshes2)
-
-    # disable running tests for this method in this class, it's meant to be inherited by the TestImportNewMeshes classes so they both run the same test
-    # parameterization would be better but it's complicated in this case
-    test_import_new_meshes.__test__ = False
 
 class TestImportNewMeshes(ImportNewMeshesCommon):
 
@@ -246,6 +221,29 @@ class TestImportNewMeshes(ImportNewMeshesCommon):
         # cleanup files created for testing
         for filename in self.mesh_filenames + [self.metadata_filename]:
             os.remove(Path(settings.MESH_DIR, filename+".gz"))
+
+    
+    def test_import_new_meshes(self):
+        
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            meshes_added = import_new_meshes()
+
+        assert len(meshes_added) ==  len(self.mesh_filenames)
+
+        for mesh in meshes_added:
+            mesh_obj = Mesh.objects.get(id=mesh["id"])
+            assert mesh_obj.id  == mesh["id"]
+            assert mesh_obj.md5 == mesh["md5"]
+
+        all_meshes = Mesh.objects.all()
+
+        # run same meshes again and test not added again
+        meshes_added = import_new_meshes()
+        assert len(meshes_added) == 0
+
+        all_meshes2 = Mesh.objects.all()
+        assert list(all_meshes) == list(all_meshes2)
     
 
 @pytest.mark.usefixtures("s3_mock")
@@ -283,6 +281,30 @@ class TestImportNewMeshesFromS3(ImportNewMeshesCommon):
         with self.fs.open(path, "wb") as f:
             with gzip.open(f, "wb") as gz:
                 gz.write(content)
+
+    
+    def test_import_new_meshes(self):
+        
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            meshes_added = import_new_meshes()
+
+        assert len(meshes_added) ==  len(self.mesh_filenames)
+
+        for mesh in meshes_added:
+            mesh_obj = Mesh.objects.get(id=mesh["id"])
+            assert mesh_obj.id  == mesh["id"]
+            assert mesh_obj.md5 == mesh["md5"]
+
+        all_meshes = Mesh.objects.all()
+
+        # run same meshes again and test not added again
+        meshes_added = import_new_meshes()
+        assert len(meshes_added) == 0
+
+        all_meshes2 = Mesh.objects.all()
+        assert list(all_meshes) == list(all_meshes2)
+
 
 
 class TestRouteCleanup(TestCase):
