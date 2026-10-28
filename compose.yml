@@ -82,6 +82,16 @@ services:
       - 5672:5672
       - 15672:15672
 
+  # optional service for testing s3 in development
+  # start with docker compose --profile s3 up -d
+  s3:
+    profiles: ['s3']
+    image: luofuxiang/local-s3
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - "./s3_data:/data" # bind mount local directory to persist data
+
   swagger:
     profiles: ['swagger']
     image: swaggerapi/swagger-ui
