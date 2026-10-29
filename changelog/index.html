@@ -517,6 +517,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#fixed" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -578,7 +589,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
+  <a href="#changed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -617,7 +628,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_1" class="md-nav__link">
+  <a href="#changed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -695,7 +706,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_2" class="md-nav__link">
+  <a href="#changed_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -773,7 +784,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_3" class="md-nav__link">
+  <a href="#changed_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -851,7 +862,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_4" class="md-nav__link">
+  <a href="#changed_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -901,7 +912,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_5" class="md-nav__link">
+  <a href="#changed_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -3545,6 +3556,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#fixed" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3606,7 +3628,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
+  <a href="#changed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -3645,7 +3667,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_1" class="md-nav__link">
+  <a href="#changed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -3723,7 +3745,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_2" class="md-nav__link">
+  <a href="#changed_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -3801,7 +3823,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_3" class="md-nav__link">
+  <a href="#changed_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -3879,7 +3901,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_4" class="md-nav__link">
+  <a href="#changed_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -3929,7 +3951,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_5" class="md-nav__link">
+  <a href="#changed_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -4084,9 +4106,16 @@
 <p>The format is based on <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>,
 and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The <code>polar-route</code> dependency is now pinned to <code>==1.2.0</code> (previously <code>==1.0.0</code>). This is the first release in which <code>route_calc</code> accepts a route geojson.</li>
+<li>Updated <code>evaluate_route</code> to pass the route geojson directly to <code>route_calc</code>, removing the manual DataFrame construction and temporary file handling.</li>
+<li>Replaced the GDAL system packages in the Docker image with <code>libexpat1</code> (needed by <code>rasterio</code>); <code>polar-route</code> 1.2.0 no longer depends on Fiona, and the Python geospatial wheels bundle GDAL.</li>
+</ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Disabled celery features which are deprecated by rabbitmq &gt;= 4.3.</li>
+<li><code>evaluate_route</code> now passes <code>route_type="smoothed"</code> to <code>route_calc</code>, which <code>polar-route</code> 1.2.0 requires to be set.</li>
 </ul>
 <h2 id="030-2026-10-26">0.3.0 - 2026-10-26<a class="headerlink" href="#030-2026-10-26" title="Permanent link">&para;</a></h2>
 <h3 id="upgraded">Upgraded<a class="headerlink" href="#upgraded" title="Permanent link">&para;</a></h3>
@@ -4103,7 +4132,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Docker production and development settings modules.</li>
 <li><code>compose.prod.yml</code> for modifying the compose config for production.</li>
 </ul>
-<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Re-worked docker container to create a production build-stage.</li>
 <li>Added static file collection to the docker entrypoint script.</li>
@@ -4115,7 +4144,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <ul>
 <li>Added all ports on localhost, 127.0.0.1 and 0.0.0.0 to CORS allowed origins.</li>
 </ul>
-<h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
+<h3 id="changed_2">Changed<a class="headerlink" href="#changed_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Altered the <code>/api/recent_routes</code> endpoint to return routes from the last 24 hours. Previously it returned routes from the current calendar day.</li>
 <li>Renamed and repositioned "Falklands" location to "Mare Harbour".</li>
@@ -4140,7 +4169,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Write logs with group-write permissions.</li>
 <li>Use uv in the docker image.</li>
 </ul>
-<h3 id="changed_2">Changed<a class="headerlink" href="#changed_2" title="Permanent link">&para;</a></h3>
+<h3 id="changed_3">Changed<a class="headerlink" href="#changed_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Inappropriate use of 204 code: RecentRoutesView changed from 204 to 200 OK with an empty array and the original message ("No recent routes found for today.").</li>
 <li>Inappropriate use of 204 code: VehicleTypeListView changed from 204 to 200 OK with and empty array and the original message.</li>
@@ -4169,7 +4198,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <ul>
 <li>This changelog!</li>
 </ul>
-<h3 id="changed_3">Changed<a class="headerlink" href="#changed_3" title="Permanent link">&para;</a></h3>
+<h3 id="changed_4">Changed<a class="headerlink" href="#changed_4" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Restricted upper limit of Django support to version 5.2</li>
 <li>Name of maintainer from David Wilby to David Wyld.</li>
@@ -4195,7 +4224,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Job ID inclusion in <code>recent_routes</code> response for better tracking.</li>
 <li>Recent routes output validation tests.</li>
 </ul>
-<h3 id="changed_4">Changed<a class="headerlink" href="#changed_4" title="Permanent link">&para;</a></h3>
+<h3 id="changed_5">Changed<a class="headerlink" href="#changed_5" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Breaking</strong>: Route response structure now consistent regardless of optimisation types available.</li>
 <li>Improved <code>recent_routes</code> endpoint performance by removing repeated job status calls and heavy JSON processing.</li>
@@ -4220,7 +4249,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Location fixtures for standard locations (Bird Island, Falklands, Halley, Rothera, etc.).</li>
 <li>Swagger UI served alongside the application.</li>
 </ul>
-<h3 id="changed_5">Changed<a class="headerlink" href="#changed_5" title="Permanent link">&para;</a></h3>
+<h3 id="changed_6">Changed<a class="headerlink" href="#changed_6" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Breaking</strong>: Separated job and route endpoints - routes now accessed via job workflow.</li>
 <li><strong>Breaking</strong>: Route cancellation moved from route endpoint to job endpoint.</li>
