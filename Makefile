@@ -193,7 +193,7 @@ s3-cp: ## copy a file to the bucket in the s3 dev container run by docker compos
 		exit 1; \
 	fi
 
-	@aws  --endpoint-url=http://localhost:${DEV_S3_PORT} s3 cp $(file) s3://${DEV_S3_BUCKET}
+	@aws  --endpoint-url=http://localhost:${DEV_S3_PORT} s3 cp $(file) s3://${DEV_S3_BUCKET}/$(prefix)/
 
 
 .PHONY: help
