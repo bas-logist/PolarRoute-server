@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downgraded Django back to 5.2 to account for lack of Django 6.1 support in django-celery-beat.
 
 ### Added
+- Celery beat service to docker compose configs.
 - Testing for celery beat.
 
 ## 0.3.0 - 2026-10-26
