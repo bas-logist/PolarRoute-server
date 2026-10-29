@@ -1,0 +1,21 @@
+records:
+- created: 20241016T154603
+  filepath: /tmp/pytest-of-dalby/pytest-1/test_import_new_meshes0/southern_test_mesh.vessel_20240807T091201.json
+  latlong:
+    latmax: -40.0
+    latmin: -80.0
+    lonmax: -5.0
+    lonmin: -110.0
+  md5: 248f1ad4dc53c696f92a0fdb0280ec4f
+  meshiphi: 2.1.13
+  size: 123456
+- created: 20241016T155252
+  filepath: /tmp/pytest-of-dalby/pytest-1/test_import_new_meshes0/central_test_mesh.vessel.json
+  latlong:
+    latmax: 65.0
+    latmin: -60.0
+    lonmax: 10.0
+    lonmin: -85.0
+  md5: a9e3ec16c339ea84f5853bfee9ed3047
+  meshiphi: 2.1.13
+  size: 123456

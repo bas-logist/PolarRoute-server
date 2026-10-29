@@ -9,6 +9,17 @@ Environment variables used directly by the Django site are prefixed wit `POLARRO
 - `POLARROUTE_MESH_DIR` - absolute path to directory where mesh files will be made available (this location is periodically checked in production and new files ingested into the database based on the metadata file). A warning is logged in production if this is not set.
 - `POLARROUTE_MESH_METADATA_DIR` - as above, absolute path to directory where mesh metadata files will be made available. If this is not set, the value of `POLARROUTE_MESH_DIR` is used and a warning to this effect is logged.
 
+### Meshes in S3
+
+Either of these can be used to read meshes from an S3 bucket by setting them to a value starting with `s3://`. The value should be of the form `s3://bucket-name/` and if using any prefixes for organisation, these should be included as part of this value, e.g. `s3://bucket-name/meshes/` - remembering the trailing slash.
+
+If using S3 you should also set the S3 environment variables:
+
+- `S3_ENDPOINT_URL` - only required for non-AWS S3 services.
+- `S3_KEY` - s3 access key.
+- `S3_SECRET` - s3 secret access key.
+- `S3_REGION` - s3 region, may not be required.
+
 ## Django settings
 
 The following are inherited from Django and more information can be found on their effects via the [Django docs](https://docs.djangoproject.com/en/5.1/ref/settings/).

@@ -27,7 +27,6 @@ dependencies = [
     "polar-route==1.2.0",
     "psycopg>=3",
     "pyyaml",
-    "s3fs",
     "SQLAlchemy",
 ]
 
@@ -49,6 +48,9 @@ polarrouteserver = [
 ]
 
 [project.optional-dependencies]
+s3 = [
+    "s3fs",
+]
 dev = [
     "django-debug-toolbar",
     "pre-commit",

@@ -322,6 +322,9 @@ def open_gzipped_file(file_path: str | Path, mode="rt"):
     file_path = str(file_path) if not isinstance(file_path, str) else file_path
 
     if file_path.startswith("s3://"):
+        if s3fs is None:
+            raise RuntimeError("s3fs neeed to access s3 storage. It is not installed.")
+
         fs = _get_s3_filesystem()
         # s3fs.open returns a file-like object compatible with gzip
         with (

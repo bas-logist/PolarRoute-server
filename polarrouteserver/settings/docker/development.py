@@ -23,7 +23,7 @@ else:
 
     CELERY_BEAT_SCHEDULE["import_meshes"] = {
         "task": "polarrouteserver.route_api.tasks.import_new_meshes",
-        "schedule": crontab(minute="*/10"),
+        "schedule": crontab(minute="*/1"),
     }
 
 if CLEANUP_ROUTES:

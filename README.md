@@ -58,7 +58,7 @@ docker compose exec app django-admin migrate
 ```
 
 ### S3
-Optionally, a local S3 service can be launched in development. This is not started by default, but can be enabled by started `docker compose` with the `--profile s3` option, e.g. `docker compose --profile s3 up -d` - the S3 endpoint will be `http://localhost:8081`.
+Optionally, a local S3 service can be launched in development. This is not started by default, but can be enabled by started `docker compose` with the extra s3 compose file e.g. `docker compose -f compose.yml -f compose.s3.yml up -d` - the S3 endpoint will be `http://localhost:8081`.
 
 There are handy S3 commands in the `Makefile`. Run `make help` to find out more. Note: These require the [aws-cli](https://github.com/aws/aws-cli).
 

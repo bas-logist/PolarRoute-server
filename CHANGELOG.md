@@ -20,8 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downgraded Django back to 5.2 to account for lack of Django 6.1 support in django-celery-beat.
 
 ### Added
+- Ability to read meshes from an S3 bucket.
+- Development docker compose setup for testing with local S3.
+- `s3fs` as an optional dependency.
 - Celery beat service to docker compose configs.
 - Testing for celery beat.
+- Celery beat running in development docker environment.
 
 ## 0.3.0 - 2026-10-26
 
