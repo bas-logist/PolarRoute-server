@@ -24,7 +24,6 @@ MESH_METADATA_DIR = os.getenv("POLARROUTE_MESH_METADATA_DIR", None)
 # S3 Bucket settings
 # For reading mesh and mesh metadata from S3
 S3_ENDPOINT_URL = os.getenv("POLARROUTE_S3_ENDPOINT_URL", None)
-# S3_BUCKET = os.getenv("POLARROUTE_S3_BUCKET", None)
 S3_KEY = os.getenv("POLARROUTE_S3_KEY", None)
 S3_SECRET = os.getenv("POLARROUTE_S3_SECRET", None)
 S3_REGION = os.getenv("POLARROUTE_S3_REGION", None)
