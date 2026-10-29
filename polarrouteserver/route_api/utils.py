@@ -104,7 +104,7 @@ def route_exists(
     start_lon: float,
     end_lat: float,
     end_lon: float,
-) -> Union[Route, None]:
+) -> Route | None:
     """Check if a route of given parameters has already been calculated.
     Works through list of VehicleMesh objects in order, returns first matching route.
     Only applies to VehicleMesh objects. Return None if not and the route object if it has.
@@ -162,7 +162,7 @@ def _closest_route_in_tolerance(
     end_lat: float,
     end_lon: float,
     tolerance_nm: float = settings.WAYPOINT_DISTANCE_TOLERANCE,
-) -> Union[Route, None]:
+) -> Route | None:
     """Takes a list of routes and returns the closest if any are within tolerance, or None."""
 
     def point_within_tolerance(point_1: tuple, point_2: tuple) -> bool:
@@ -191,7 +191,7 @@ def _closest_route_in_tolerance(
     else:
         for i, route_dict in enumerate(routes_in_tolerance):
             route = Route.objects.get(id=route_dict["id"])
-            routes_in_tolerance[i].update(
+            route_dict.update(
                 {
                     "cumulative_distance": haversine_distance(
                         (start_lat, start_lon), (route.start_lat, route.start_lon)
@@ -204,9 +204,7 @@ def _closest_route_in_tolerance(
 
         from operator import itemgetter
 
-        closest_route = sorted(
-            routes_in_tolerance, key=itemgetter("cumulative_distance")
-        )[0]
+        closest_route = min(routes_in_tolerance, key=itemgetter("cumulative_distance"))
         return Route.objects.get(id=closest_route["id"])
 
 
@@ -266,13 +264,16 @@ def evaluate_route(route_json: dict, mesh: VehicleMesh) -> dict:
         time_str = convert_decimal_days(time_days)
         fuel = round(calc_route["features"][0]["properties"]["fuel"][-1], 2)
 
-    except Exception as e:
-        logger.error(e)
+    except Exception:
+        logger.exception("Error in evaluate_route")
         return None
 
-    return dict(
-        route=calc_route, time_days=time_days, time_str=time_str, fuel_tonnes=fuel
-    )
+    return {
+        "route": calc_route,
+        "time_days": time_days,
+        "time_str": time_str,
+        "fuel_tonnes": fuel,
+    }
 
 
 def select_mesh_for_route_evaluation(

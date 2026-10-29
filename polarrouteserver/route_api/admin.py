@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import DatabaseError
 
 from .models import Vehicle, Route, Job, VehicleMesh, EnvironmentMesh, Location
 
@@ -54,12 +56,12 @@ class EnvironmentMeshAdmin(BaseMeshAdmin):
 
 @admin.register(Vehicle)
 class VehicleAdmin(admin.ModelAdmin):
-    list_display = ["vessel_type"]
+    list_display = ("vessel_type",)
 
 
 @admin.register(Route)
 class RouteAdmin(admin.ModelAdmin):
-    list_display = [
+    list_display = (
         "id",
         "display_start",
         "display_end",
@@ -71,7 +73,7 @@ class RouteAdmin(admin.ModelAdmin):
         "mesh_id",
         "info",
         "polar_route_version",
-    ]
+    )
     ordering = ("-requested",)
     list_filter = ("tags", "calculated", "requested")
     search_fields = ("start_name", "end_name", "tags__name")
@@ -111,18 +113,21 @@ class RouteAdmin(admin.ModelAdmin):
 
         return self.fieldsets
 
+    @admin.display(description="Start (lat,lon)")
     def display_start(self, obj):
         if obj.start_name:
             return f"{obj.start_name} ({obj.start_lat},{obj.start_lon})"
         else:
             return f"({obj.start_lat},{obj.start_lon})"
 
+    @admin.display(description="End (lat,lon)")
     def display_end(self, obj):
         if obj.end_name:
             return f"{obj.end_name} ({obj.end_lat},{obj.end_lon})"
         else:
             return f"({obj.end_lat},{obj.end_lon})"
 
+    @admin.display(description="Tags")
     def display_tags(self, obj):
         """Display tags as a comma-separated string."""
         tags = obj.tags.all()
@@ -130,6 +135,7 @@ class RouteAdmin(admin.ModelAdmin):
             return ", ".join([tag.name for tag in tags])
         return "-"
 
+    @admin.display(description="Job ID (latest)")
     def job_id(self, obj):
         job = obj.job_set.latest("datetime")
         return f"{job.id}"
@@ -163,32 +169,31 @@ class RouteAdmin(admin.ModelAdmin):
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
-    list_display = [
+    list_display = (
         "id",
         "datetime",
         "route",
         "get_status",
-    ]
+    )
     ordering = ("-datetime",)
 
+    @admin.display(description="Status")
     def get_status(self, obj):
         """Get current job status from Celery."""
         try:
             return obj.status if obj.status is not None else "UNKNOWN"
-        except Exception as e:
+        except (DatabaseError, ObjectDoesNotExist, AttributeError) as e:
             return f"Error: {type(e).__name__}"
-
-    get_status.short_description = "Status"
 
 
 @admin.register(Location)
 class LocationAdmin(admin.ModelAdmin):
-    list_display = [
+    list_display = (
         "id",
         "name",
         "lat",
         "lon",
-    ]
-    list_filter = ["name"]
-    search_fields = ["name"]
-    ordering = ["name"]
+    )
+    list_filter = ("name",)
+    search_fields = ("name",)
+    ordering = ("name",)

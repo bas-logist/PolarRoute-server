@@ -14,10 +14,10 @@ from meshiphi.mesh_generation.environment_mesh import EnvironmentMesh as EnvMesh
 from rest_framework.generics import GenericAPIView
 from rest_framework.views import APIView
 from rest_framework.reverse import reverse
+from polar_route.config_validation.config_validator import validate_vessel_config
 from rest_framework import serializers, viewsets
 from taggit.models import TaggedItem
 
-from polar_route.config_validation.config_validator import validate_vessel_config
 from polarrouteserver._version import __version__ as polarrouteserver_version
 from polarrouteserver.celery import app
 
@@ -25,26 +25,26 @@ from .models import Job, Vehicle, Route, EnvironmentMesh, VehicleMesh, Location
 from .tasks import create_and_calculate_route
 from .responses import (
     ResponseMixin,
+    acceptedResponseSchema,
+    badRequestResponseSchema,
+    jobStatusResponseSchema,
+    meshDetailResponseSchema,
+    noContentResponseSchema,
+    notAcceptableResponseSchema,
+    notFoundResponseSchema,
+    recentRoutesResponseSchema,
+    routeAcceptedResponseSchema,
+    routeEvaluationResponseSchema,
+    routeSchema,
     successResponseSchema,
     vehicleTypeListResponseSchema,
-    routeAcceptedResponseSchema,
-    recentRoutesResponseSchema,
-    meshDetailResponseSchema,
-    routeSchema,
-    routeEvaluationResponseSchema,
-    badRequestResponseSchema,
-    notFoundResponseSchema,
-    notAcceptableResponseSchema,
-    noContentResponseSchema,
-    acceptedResponseSchema,
-    jobStatusResponseSchema,
 )
 from .serializers import (
-    VehicleSerializer,
-    VesselTypeSerializer,
-    RouteSerializer,
     JobStatusSerializer,
     LocationSerializer,
+    RouteSerializer,
+    VehicleSerializer,
+    VesselTypeSerializer,
 )
 from .utils import (
     add_vehicle_to_environment_mesh,
@@ -75,7 +75,7 @@ class LoggingMixin:
                     "endpoint": request.path,
                     "user": request.user.username,
                     "ip_address": request.META.get("REMOTE_ADDR"),
-                    "user_agent": request.META.get("HTTP_USER_AGENT"),
+                    "user_agent": request.headers.get("user-agent"),
                 }
             )
         except Exception:
@@ -91,7 +91,7 @@ class LoggingMixin:
                     "status_code": response.status_code,
                     "user": request.user.username,
                     "ip_address": request.META.get("REMOTE_ADDR"),
-                    "user_agent": request.META.get("HTTP_USER_AGENT"),
+                    "user_agent": request.headers.get("user-agent"),
                 }
             )
         except Exception:
@@ -124,14 +124,14 @@ class VehicleRequestView(LoggingMixin, ResponseMixin, GenericAPIView):
         # Using Polarroute's built in validation to validate vessel config supplied
         try:
             validate_vessel_config(data)
-            logging.info("Vessel config is valid.")
-        except Exception as e:
+            logger.info("Vessel config is valid.")
+        except Exception as e:  # noqa: BLE001  --- until we can use a version of polarroute with custom exceptions
             if isinstance(e, ValidationError):
                 error_message = f"Validation error: {e.message}"
             else:
                 error_message = f"{e}"
 
-            logging.error(error_message)
+            logger.error(error_message)
 
             return self.bad_request_response(error_message)
 

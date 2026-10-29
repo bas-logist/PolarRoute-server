@@ -1,7 +1,7 @@
-from drf_spectacular.utils import OpenApiResponse, inline_serializer
-from rest_framework.response import Response
-from rest_framework import serializers
 import rest_framework.status
+from drf_spectacular.utils import OpenApiResponse, inline_serializer
+from rest_framework import serializers
+from rest_framework.response import Response
 
 
 class ResponseMixin:

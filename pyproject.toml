@@ -12,10 +12,10 @@ description = "Backend server for serving PolarRoute and MeshiPhi assets and man
 readme = "README.md"
 license = {file = "LICENSE"}
 dynamic = ["version"]
-requires-python = ">= 3.10"
+requires-python = ">= 3.12"
 dependencies = [
     "celery",
-    "Django>=5.2,<6",
+    "Django~=6.1",
     "django-celery-beat",
     "django-celery-results",
     "django-cors-headers",
@@ -24,7 +24,7 @@ dependencies = [
     "django-taggit",
     "drf-spectacular[sidecar]",
     "haversine",
-    "polar-route @ git+https://github.com/antarctica/PolarRoute.git",
+    "polar-route==1.2.0",
     "psycopg>=3",
     "pyyaml",
     "SQLAlchemy",
@@ -85,6 +85,12 @@ request_route = "request_route.request_route:main"
 
 [tool.ruff]
 exclude = ["tests/*"]
+
+[tool.ruff.lint]
+ignore = [
+    "RUF012", # allow mutable default values for class attributes (because Django uses them)
+]
+unfixable = ["COM818"]
 
 [tool.ruff.lint.per-file-ignores]
 "polarrouteserver/settings/*" = [

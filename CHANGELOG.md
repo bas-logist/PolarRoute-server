@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The `polar-route` dependency is now pinned to `==1.2.0` (previously `==1.0.0`). This is the first release in which `route_calc` accepts a route geojson.
+- Updated `evaluate_route` to pass the route geojson directly to `route_calc`, removing the manual DataFrame construction and temporary file handling.
+- Replaced the GDAL system packages in the Docker image with `libexpat1` (needed by `rasterio`); `polar-route` 1.2.0 no longer depends on Fiona, and the Python geospatial wheels bundle GDAL.
+
+### Fixed
+- Disabled celery features which are deprecated by rabbitmq >= 4.3.
+- `evaluate_route` now passes `route_type="smoothed"` to `route_calc`, which `polar-route` 1.2.0 requires to be set.
+
+## 0.3.0 - 2026-10-26
+
+### Upgraded
+- Django 5.2 to Django 6.1
+
+### Removed
+- Support for Python < 3.12
+
 ### Added
 - Added `add_vehicle_to_environment_mesh()` function. 
 - A new `create_and_calculate_route()` task which is used to calculate optimal route using `VehicleMesh`, creating one if necessary (replaces `optimise_route()` task, which is now a function).
@@ -27,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PolarRoute 1.0.0 support, >= 1.1.8 required for custom vessel performance functionality.
 - Re-worked docker container to create a production build-stage.
 - Added static file collection to the docker entrypoint script.
+- A number of syntax changes throughout to comply with default rules enabled in ruff >0.16.
+- Changed calls to `datetime.timezone.utc` to `datetime.UTC`.
  
 ## 0.2.7 - 2025-12-22
 
