@@ -183,7 +183,7 @@ def evaluate_route(route_json: dict, mesh: Mesh) -> dict:
     properties.setdefault("to", "End")
 
     try:
-        calc_route = route_calc(route_json, mesh=mesh.json)
+        calc_route = route_calc(route_json, mesh=mesh.json, route_type="smoothed")
         time_days = calc_route["features"][0]["properties"]["traveltime"][-1]
         time_str = convert_decimal_days(time_days)
         fuel = round(calc_route["features"][0]["properties"]["fuel"][-1], 2)
