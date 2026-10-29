@@ -209,6 +209,14 @@ CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "amqp://guest:guest@localhost
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "django-db")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
+#  stop Celery from creating problematic transient queues by explicitly disabling worker gossip and remote control
+CELERY_WORKER_SEND_TASK_EVENTS = False
+CELERY_WORKER_ENABLE_REMOTE_CONTROL = False
+
+# forces Celery's remote control (pidbox) and event monitoring systems to declare their queues as durable, preventing them from falling into the forbidden transient/non-exclusive category
+CELERY_CONTROL_QUEUE_DURABLE = True
+CELERY_EVENT_QUEUE_DURABLE = True
+
 # django-health-check settings
 HEALTH_CHECKS = [
     "health_check.Cache",
