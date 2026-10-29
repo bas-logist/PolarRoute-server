@@ -237,17 +237,6 @@ HEALTH_CHECKS = [
 # Routing settings (TODO: hardcoded, can / should these be exposed elsewhere?)
 WAYPOINT_DISTANCE_TOLERANCE = 1  # Nautical Miles
 
-# For now, vessel config is used in the pipeline to calculate a vessel mesh
-# VESSEL_CONFIG =  {
-#        "vessel_type": "SDA",
-#        "max_speed": 30,
-#        "unit": "km/hr",
-#        "beam": 10,
-#        "hull_type": "slender",
-#        "force_limit": 100000,
-#        "max_ice_conc": 80,
-#        "min_depth": 10
-# }
 base_routeplanner_config = {
     "path_variables": ["fuel", "traveltime"],
     "vector_names": ["uC", "vC"],
@@ -262,8 +251,15 @@ base_routeplanner_config = {
     "smoothing_merge_separation": 1e-3,
     "smoothing_converged_sep": 1e-3,
 }
+
 TRAVELTIME_CONFIG = base_routeplanner_config | {"objective_function": "traveltime"}
+# Which of the energy configs is used depends on whether the vehicle mesh models fuel or
+# battery use. The path variables of the traveltime config are matched to it.
 FUEL_CONFIG = base_routeplanner_config | {"objective_function": "fuel"}
+BATTERY_CONFIG = base_routeplanner_config | {
+    "objective_function": "battery",
+    "path_variables": ["battery", "traveltime"],
+}
 
 # dictionary relating user-friendly name of data source with loader value used in vessel mesh json
 EXPECTED_MESH_DATA_SOURCES = {

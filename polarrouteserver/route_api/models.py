@@ -68,6 +68,35 @@ class Vehicle(models.Model):
     created_by = models.CharField(max_length=150, null=True)
 
 
+class EnvironmentMesh(Mesh):
+    "A mesh of environmental data only, with no vehicle performance."
+
+    class Meta:
+        verbose_name_plural = "Environment Meshes"
+
+
+class VehicleMesh(Mesh):
+    """A mesh including the performance of one vehicle.
+
+    Either built from an EnvironmentMesh (a cache, deleted with it) or imported
+    already built, in which case environment_mesh is null.
+    """
+
+    environment_mesh = models.ForeignKey(
+        EnvironmentMesh, on_delete=models.CASCADE, null=True
+    )
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.PROTECT)
+
+    class Meta:
+        verbose_name_plural = "Vehicle Meshes"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["environment_mesh", "vehicle"],
+                name="unique_vehicle_mesh_per_environment_mesh",
+            )
+        ]
+
+
 class Route(models.Model):
     "Represents a route."
 
@@ -75,6 +104,14 @@ class Route(models.Model):
     calculated = models.DateTimeField(null=True)
     info = models.JSONField(null=True)
     mesh = models.ForeignKey(Mesh, on_delete=models.SET_NULL, null=True)
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.SET_NULL, null=True)
+    vehicle_mesh = models.ForeignKey(
+        VehicleMesh,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="routes",
+        help_text="The mesh with the performance of the vehicle which the route was calculated on.",
+    )
     start_lat = models.FloatField()
     start_lon = models.FloatField()
     end_lat = models.FloatField()

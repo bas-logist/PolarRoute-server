@@ -1,166 +1,52 @@
-import copy
 import datetime
 import gzip
 import json
 import os
 import re
-import tempfile
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
-import polar_route
 import yaml
 from celery import states
 from celery.exceptions import Ignore
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.utils import timezone
-from polar_route.route_planner.route_planner import RoutePlanner
-from polar_route.utils import extract_geojson_routes
 
 from polarrouteserver.celery import app
 
 from .models import Job, Mesh, Route
-from .utils import calculate_md5, check_mesh_data
+from .utils import (
+    NotAMeshError,
+    check_mesh_data,
+    check_missing_ice_data,
+    get_vehicle_mesh,
+    ingest_mesh,
+    optimise_route,
+)
 
-VESSEL_MESH_FILENAME_PATTERN = re.compile(r"vessel_?.*\.json$")
+MESH_FILENAME_PATTERN = re.compile(r"\.json$")
 
 logger = get_task_logger(__name__)
 
 
 @app.task(bind=True)
-def optimise_route(
-    self,
-    route_id: int,
-    backup_mesh_ids: list[int] | None = None,
-) -> dict:
+def import_new_meshes(self):
     """
-    Use PolarRoute to calculate optimal route from Route database object and mesh.
-    Saves Route in database and returns route geojson as dictionary.
+    Look for new meshes and insert them into the database.
 
-    Params:
-        route_id: id of record in Route database table
-        backup_mesh_ids list: list of database ids of backup meshes to try in order of priority
+    Automatically detects whether each mesh is an EnvironmentMesh or VehicleMesh based
+    on mesh content. Vehicles are created for VehicleMeshes if they don't exist.
 
     Returns:
-        route geojson as dictionary
+        list: List of dictionaries containing details of added meshes with fields:
+              - id: Database ID of created mesh
+              - md5: MD5 hash of mesh data
+              - name: Mesh filename
+              - type: "VehicleMesh" or "EnvironmentMesh"
+
+    Raises:
+        ValueError: If MESH_METADATA_DIR is not set
     """
-    route = Route.objects.get(id=route_id)
-    mesh = route.mesh
-    logger.info(f"Running optimisation for route {route.id}")
-    logger.info(f"Using mesh {mesh.id}")
-    if backup_mesh_ids:
-        logger.info(f"Also got backup mesh ids {backup_mesh_ids}")
-
-    # add warning on mesh date if older than today
-    if mesh.created.date() < datetime.datetime.now(tz=datetime.UTC).date():
-        route.info = {
-            "info": f"Latest available mesh from {datetime.datetime.strftime(mesh.created, '%Y/%m/%d %H:%M%S')}"
-        }
-
-    data_warning_message = check_mesh_data(mesh)
-    if data_warning_message != "":
-        if route.info is None:
-            route.info = {"info": data_warning_message}
-        else:
-            route.info["info"] = route.info["info"] + data_warning_message
-
-    # convert waypoints into pandas dataframe for PolarRoute
-    waypoints = pd.DataFrame(
-        {
-            "Name": [
-                "Start" if route.start_name is None else route.start_name,
-                "End" if route.end_name is None else route.end_name,
-            ],
-            "Lat": [route.start_lat, route.end_lat],
-            "Long": [route.start_lon, route.end_lon],
-            "Source": ["X", np.nan],
-            "Destination": [np.nan, "X"],
-        }
-    )
-
-    try:
-        unsmoothed_routes = []
-        route_planners = []
-        configs = (
-            settings.TRAVELTIME_CONFIG,
-            settings.FUEL_CONFIG,
-        )
-        for config in configs:
-            rp = RoutePlanner(copy.deepcopy(mesh.json), config)
-
-            # Calculate optimal dijkstra path between waypoints
-            rp.compute_routes(waypoints)
-
-            route_planners.append(rp)
-
-            # save the initial unsmoothed route
-            logger.info(
-                f"Calculating unsmoothed Dijkstra paths for {config['objective_function']}-optimised route."
-            )
-            if len(rp.routes_dijkstra) == 0:
-                raise ValueError("Inaccessible. No routes found.")
-            route_geojson = extract_geojson_routes(rp.to_json())
-            route_geojson[0]["features"][0]["properties"]["objective_function"] = (
-                config["objective_function"]
-            )
-            unsmoothed_routes.append(route_geojson)
-
-        # Save unsmoothed routes (but don't set calculated timestamp yet)
-        route.json_unsmoothed = unsmoothed_routes
-        route.polar_route_version = polar_route.__version__
-        route.save()  # Save progress but no calculated timestamp
-
-        smoothed_routes = []
-        for i, rp in enumerate(route_planners):
-            # Smooth the dijkstra routes
-            rp.compute_smoothed_routes()
-            # Save the smoothed route(s)
-            logger.info(f"Route smoothing {i + 1}/{len(route_planners)} complete.")
-            route_geojson = extract_geojson_routes(rp.to_json())
-            route_geojson[0]["features"][0]["properties"]["objective_function"] = (
-                rp.config["objective_function"]
-            )
-            smoothed_routes.append(route_geojson)
-
-        # Update the database with all routes at once
-        route.json = smoothed_routes
-
-        # Set calculated timestamp when all routes ready
-        route.calculated = timezone.now()
-        route.polar_route_version = polar_route.__version__
-        route.save()
-
-        return smoothed_routes
-
-    except Exception as e:  # noqa BLE001
-        logger.error(e)
-        self.update_state(state=states.FAILURE)
-        # this is awful, polar route should raise a custom error class
-        if "Inaccessible. No routes found" in e.args[0] and len(backup_mesh_ids) > 0:
-            # if route is inaccesible in the mesh, try again if backup meshes are provided
-            logger.info(
-                f"No routes found on mesh {mesh.id}, trying with next mesh(es) {backup_mesh_ids}"
-            )
-            route.info = {"info": "Route inaccessible on mesh, trying next mesh."}
-            route.mesh = Mesh.objects.get(id=backup_mesh_ids[0])
-            route.save()
-            task = optimise_route.delay(route.id, backup_mesh_ids[1:])
-            _ = Job.objects.create(
-                id=task.id,
-                route=route,
-            )
-            raise Ignore()
-        else:
-            route.info = {"error": f"{e}"}
-            route.save()
-            raise Ignore()
-
-
-@app.task(bind=True)
-def import_new_meshes(self):
-    """Look for new meshes and insert them into the database."""
 
     if settings.MESH_METADATA_DIR is None:
         raise ValueError("MESH_METADATA_DIR has not been set.")
@@ -187,8 +73,7 @@ def import_new_meshes(self):
 
     meshes_added = []
     for record in metadata["records"]:
-        # we only want the vessel json files
-        if not bool(re.search(VESSEL_MESH_FILENAME_PATTERN, record["filepath"])):
+        if not re.search(MESH_FILENAME_PATTERN, record["filepath"]):
             continue
 
         # extract the filename from the filepath
@@ -209,56 +94,111 @@ def import_new_meshes(self):
                 f"Can't read {zipped_filename} due to permission error. File may still be transferring. Skipping."
             )
             continue
-
-        # write out the unzipped mesh to temp file
-        with tempfile.NamedTemporaryFile(mode="w+", delete=True) as tfile:
-            json.dump(mesh_json, tfile, indent=4)
-            tfile.flush()
-            md5 = calculate_md5(tfile.name)
-
-        # cross reference md5 hash from file record in metadata to actual file on disk
-        if md5 != record["md5"]:
+        except (OSError, EOFError, ValueError) as e:
             logger.warning(
-                f"Mesh file md5: {md5}\n\
-                           does not match\n\
-                           Metadata md5: {record['md5']}\n\
-                           Skipping."
+                f"Can't read {zipped_filename}: {e}. File may still be transferring. Skipping."
             )
-            # if md5 hash from metadata file does not match that of the file itself,
-            # there may have been a filename clash, skip this one.
             continue
 
-        # create an entry in the database
-        mesh, created = Mesh.objects.get_or_create(
-            md5=md5,
-            defaults={
-                "name": mesh_filename,
-                "valid_date_start": datetime.datetime.strptime(
-                    mesh_json["config"]["mesh_info"]["region"]["start_time"], "%Y-%m-%d"
-                ).replace(tzinfo=datetime.UTC),
-                "valid_date_end": datetime.datetime.strptime(
-                    mesh_json["config"]["mesh_info"]["region"]["end_time"], "%Y-%m-%d"
-                ).replace(tzinfo=datetime.UTC),
-                "created": datetime.datetime.strptime(
-                    record["created"], "%Y%m%dT%H%M%S"
-                ).replace(tzinfo=datetime.UTC),
-                "json": mesh_json,
-                "meshiphi_version": record["meshiphi"],
-                "lat_min": record["latlong"]["latmin"],
-                "lat_max": record["latlong"]["latmax"],
-                "lon_min": record["latlong"]["lonmin"],
-                "lon_max": record["latlong"]["lonmax"],
-            },
-        )
+        # cross reference md5 hash from file record in metadata to actual file on disk,
+        # if they do not match there may have been a filename clash, skip this one.
+        try:
+            mesh, created, mesh_type = ingest_mesh(
+                mesh_json=mesh_json,
+                mesh_filename=mesh_filename,
+                metadata_record=record,
+                expected_md5=record["md5"],
+            )
+        except NotAMeshError as e:
+            logger.debug(f"Skipping {mesh_filename}: {e}")
+            continue
+        except (ValueError, KeyError, TypeError) as e:
+            logger.warning(f"Skipping {mesh_filename}: {e!r}")
+            continue
+
         if created:
             logger.info(
-                f"Adding new mesh to database: {mesh.id} {mesh.name} {mesh.created}"
+                f"Adding new {mesh_type} to database: {mesh.id} {mesh.name} {mesh.created}"
             )
             meshes_added.append(
-                {"id": mesh.id, "md5": record["md5"], "name": mesh.name}
+                {
+                    "id": mesh.id,
+                    "md5": record["md5"],
+                    "name": mesh.name,
+                    "type": mesh_type,
+                }
             )
 
     return meshes_added
+
+
+@app.task(bind=True)
+def create_and_calculate_route(
+    self,
+    route_id: int,
+    backup_mesh_ids: list[int] | None = None,
+) -> list:
+    """
+    Calculate optimal routes for a Route on a mesh with the performance of its vehicle.
+
+    The mesh of the route is an EnvironmentMesh, or a VehicleMesh imported for the route's
+    vehicle. The VehicleMesh for the route's vehicle is found, or built from the
+    EnvironmentMesh if it doesn't exist yet.
+
+    Saves Route in database and returns the smoothed routes as geojson dictionaries.
+
+    Args:
+        route_id: id of record in Route database table
+        backup_mesh_ids: database ids of backup meshes to try in order of priority,
+            if the route is inaccessible on the mesh.
+    """
+    route = Route.objects.get(id=route_id)
+    logger.info(f"Running optimisation for route {route.id}")
+    logger.info(f"Using mesh {route.mesh_id} for vehicle {route.vehicle_id}")
+    if backup_mesh_ids:
+        logger.info(f"Also got backup mesh ids {backup_mesh_ids}")
+
+    try:
+        mesh = get_vehicle_mesh(route.mesh, route.vehicle)
+        route.vehicle_mesh = mesh
+
+        # add warning on mesh date if older than today
+        if mesh.created.date() < datetime.datetime.now(tz=datetime.UTC).date():
+            route.info = {
+                "info": f"Latest available mesh from {datetime.datetime.strftime(mesh.created, '%Y/%m/%d %H:%M%S')}"
+            }
+
+        data_warning_message = check_mesh_data(mesh) + check_missing_ice_data(mesh)
+        if data_warning_message != "":
+            if route.info is None:
+                route.info = {"info": data_warning_message}
+            else:
+                route.info["info"] = route.info["info"] + data_warning_message
+
+        return optimise_route(mesh.json, route)
+
+    except Exception as e:  # noqa BLE001
+        logger.error(e)
+        self.update_state(state=states.FAILURE)
+        # this is awful, polar route should raise a custom error class
+        if "Inaccessible. No routes found" in str(e) and backup_mesh_ids:
+            # if route is inaccesible in the mesh, try again if backup meshes are provided
+            logger.info(
+                f"No routes found on mesh {route.mesh_id}, trying with next mesh(es) {backup_mesh_ids}"
+            )
+            route.info = {"info": "Route inaccessible on mesh, trying next mesh."}
+            route.mesh = Mesh.objects.get(id=backup_mesh_ids[0])
+            route.save()
+            task = create_and_calculate_route.delay(route.id, backup_mesh_ids[1:])
+            _ = Job.objects.create(
+                id=task.id,
+                route=route,
+            )
+            raise Ignore()
+        else:
+            route.info = {"error": f"{e}"}
+            route.save()
+            raise Ignore()
 
 
 @app.task(bind=True)
@@ -289,7 +229,10 @@ def cleanup_meshes(self):
     time_threshold = timezone.now() - datetime.timedelta(
         days=settings.CLEANUP_MESHES_DAYS
     )
-    meshes_to_delete = Mesh.objects.filter(created__lt=time_threshold, protect=False)
+    # a built vehicle mesh is deleted with its environment mesh, unless it is protected
+    meshes_to_delete = Mesh.objects.filter(
+        created__lt=time_threshold, protect=False
+    ).exclude(environmentmesh__vehiclemesh__protect=True)
     meshes_to_delete.delete()
 
 

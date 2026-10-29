@@ -26,7 +26,19 @@ To calculate a route, PolarRoute requires a mesh that covers the area of the sta
 
 For the time-being, meshes are calculated separately to PolarRoute-server, either with PolarRoute-pipeline or with MeshiPhi directly.
 
-The application takes **vessel** meshes, with the vessel transformation already applied.
+PolarRoute-server ingests two types of meshes, which share one table and one id space:
+
+- **Environment Meshes**: Environmental data.
+- **Vehicle Meshes**: Environmental data + the performance of one vehicle.
+
+PolarRoute-server automatically detects which type of mesh is being ingested and creates the appropriate database records:
+
+- A mesh with `vessel_info` in its config is a **Vehicle Mesh**. Its Vehicle is created too, from the `vessel_info`, if it doesn't exist already.
+- A mesh without `vessel_info` is an **Environment Mesh**.
+
+Meshes are identified by the md5 hash of their json, so a mesh already in the database is not added again. Data missing from a mesh (`null`) is stored as it is, and PolarRoute treats a missing sea ice concentration as ice-free, so a route is warned about it when it is calculated.
+
+Vehicle Meshes can also be built by PolarRoute-server from an Environment Mesh and a Vehicle (see [Mesh selection](#mesh-selection)). These are kept for the next route requested with the same vehicle on the same environment mesh, and are deleted with it. Vehicle Meshes that are ingested have no Environment Mesh, so another vehicle can't be added to them.
 
 Meshes can be ingested into the database manually or automatically.
 
@@ -55,6 +67,14 @@ If the route optimisation fails, the next mesh in priority order is tried if the
 ## Mesh selection
 Before a route is calculated, a priority list of meshes is created by `polarrouteserver.route_api.utils.select_mesh`.
 
-It takes all of the meshes that contain the requested start and end coordinates and that were created on the latest date available out of those meshes and returns this list of meshes sorted from smallest to largest total area.
+It takes all of the meshes that contain the requested start and end coordinates and that were created on the latest date available out of those meshes and returns this list of meshes sorted from smallest to largest total area. The meshes considered are all Environment Meshes, and ingested Vehicle Meshes of the requested vehicle which have no Environment Mesh.
+
+The route is saved with the first mesh and the vehicle. When the route is calculated, the task (`create_and_calculate_route`) finds the Vehicle Mesh for the vehicle on that mesh, or builds it by adding the vehicle's performance to the Environment Mesh with PolarRoute's `VesselPerformanceModeller`, which is slow the first time. A vessel type PolarRoute has no performance model for can't be added, and the route fails with that error.
+
+The route is optimised for traveltime, and for either fuel or battery use depending on which the Vehicle Mesh models.
+
+The Vehicle Mesh a route was calculated on is recorded as the `vehicle_mesh` of the route. It is cleared if that mesh is deleted, which happens when its Environment Mesh is cleaned up, or when the properties of its vehicle are updated.
+
+Before calculating, the mesh is checked for missing data. The route's `info` warns about missing data sources, and about sea cells without sea ice concentration, which PolarRoute treats as ice-free.
 
 ## Troubleshooting

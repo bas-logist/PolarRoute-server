@@ -76,9 +76,11 @@ Make a POST request to the `/api/route` endpoint to submit a route calculation j
 ```bash
 curl --header "Content-Type: application/json" \
   --request POST \
-  --data '{"start_lat":"-51.73","start_lon":"-57.71", "end_lat":"-54.03","end_lon":"-38.04"}' \
+  --data '{"start_lat":"-51.73","start_lon":"-57.71", "end_lat":"-54.03","end_lon":"-38.04", "vehicle_type":"SDA"}' \
   http://localhost:8000/api/route
 ```
+
+`vehicle_type` is required. It must be the `vessel_type` of a vehicle in the database (see [vehicle management](vehicle-management.md)), otherwise the request is rejected with a 404. Requests without it are rejected with a 400. The same is true of requests to `/api/evaluate_route`.
 
 This will return a response containing:
 
@@ -121,7 +123,12 @@ curl --header "Content-Type: application/json" \
   http://localhost:8000/api/route/9
 ```
 
-This will return the complete route data.
+This will return the complete route data. Each route has a `type`, and a `vehicle` with the properties of the vehicle it was calculated for:
+
+- `traveltime`: optimised for travel time.
+- `energy`: optimised for energy use, which is fuel for some vehicles and battery for others. Its `energyConsumption` metric has a `source` of `fuel` or `battery`, with its `value` and `units`.
+
+Previous versions returned `fuel` for the type of this route, and the metric as `fuelConsumption`.
 
 ### Optional: Cancel Job
 
