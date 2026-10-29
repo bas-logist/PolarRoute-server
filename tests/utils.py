@@ -5,6 +5,17 @@ from polarrouteserver.route_api.models import EnvironmentMesh, VehicleMesh, Vehi
 from django.conf import settings
 from django.utils import timezone
 
+
+def calculate_md5(filename):
+    """create md5sum checksum for any file"""
+    hash_md5 = hashlib.md5()
+
+    with open(filename, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
 def add_test_environment_mesh_to_db():
     """utility function to add an environment mesh to the test db"""
     fixture_path = os.path.join(os.path.dirname(__file__), 'fixtures', 'test_vessel_mesh.json')

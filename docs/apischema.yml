@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: PolarRoute-Server
-  version: 0.3.1.dev25+gdded9d702.d20261029
+  version: 0.3.1.dev86+ga3c663a81
   description: Backend server for serving PolarRoute and MeshiPhi assets
 paths:
   /api/evaluate_route:
@@ -482,7 +482,8 @@ paths:
       description: |-
         Delete vehicle by vessel_type
 
-        Note: Vehicles with created_by='fixture' are protected from deletion.
+        Note: Vehicles with created_by='fixture' are protected from deletion, as are
+        vehicles with ingested vehicle meshes. Meshes built for the vehicle are deleted with it.
       parameters:
       - in: path
         name: vessel_type

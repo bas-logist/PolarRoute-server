@@ -59,9 +59,9 @@ In addition a custom command is available to manually insert new meshes into the
 $ django-admin insert_mesh <Mesh file or list of files>
 ```
 
-`insert_mesh` takes a filename or list of filepaths containing meshes either as `.vessel.json` format or gzipped vessel mesh files.
+`insert_mesh` takes a filename or list of filepaths containing environment or vehicle meshes, as `.json` files or gzipped `.json.gz` files.
 
-Only meshes which are not present in the database will be inserted. Uniqueness is based on the md5 hash of the unzipped vessel mesh file.
+Only meshes which are not present in the database will be inserted. Uniqueness is based on the md5 hash of the mesh json.
 
 ## Configuring a web server
 

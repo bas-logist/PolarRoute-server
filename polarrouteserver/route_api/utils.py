@@ -1,29 +1,44 @@
+import copy
 import hashlib
 import json
 import logging
-import copy
-from datetime import datetime
-from tempfile import NamedTemporaryFile
-from typing import Union, Tuple, Dict, Any
+import math
+from datetime import UTC, datetime
+from typing import Any
 
-from django.conf import settings
-from django.utils import timezone
 import haversine
 import numpy as np
 import pandas as pd
 import polar_route
+from django.conf import settings
+from django.db import IntegrityError, transaction
+from django.db.models import Q
+from django.utils import timezone
+from polar_route.route_calc import route_calc
 from polar_route.route_planner.route_planner import RoutePlanner
-from polar_route.utils import extract_geojson_routes
+from polar_route.utils import convert_decimal_days, extract_geojson_routes
 from polar_route.vessel_performance.vessel_performance_modeller import (
     VesselPerformanceModeller,
 )
-from polar_route.vessel_performance.vessels.example_ship import ExampleShip
-from polar_route.route_calc import route_calc
-from polar_route.utils import convert_decimal_days
 
-from .models import Route, EnvironmentMesh, VehicleMesh, Vehicle
+from .models import EnvironmentMesh, Mesh, Route, Vehicle, VehicleMesh
 
 logger = logging.getLogger(__name__)
+
+VEHICLE_OPTIONAL_FIELDS = (
+    "max_ice_conc",
+    "min_depth",
+    "max_wave",
+    "excluded_zones",
+    "neighbour_splitting",
+    "beam",
+    "hull_type",
+    "force_limit",
+)
+
+
+class NotAMeshError(ValueError):
+    """The json is not a mesh."""
 
 
 def select_mesh(
@@ -31,93 +46,78 @@ def select_mesh(
     start_lon: float,
     end_lat: float,
     end_lon: float,
-    vehicle_type: str = None,
-) -> Union[list[Union[VehicleMesh, EnvironmentMesh]], None]:
-    """Find the most suitable mesh from the database for a given set of start and end coordinates.
-    If vehicle_type is specified, look for VehicleMesh objects for that vehicle_type.
-    If no vehicle_type specified or specific vehicle type not found, fall back to EnvironmentMesh
-    objects.
+    vehicle_type: str | None = None,
+) -> list[Mesh] | None:
+    """Find the most suitable meshes from the database for a given set of start and end coordinates.
 
-    Returns either a list of mesh objects (VehicleMesh for specific vehicle_type, EnvironmentMesh
-    as fallback) or None.
+    Candidates are all EnvironmentMeshes, plus (if vehicle_type is given) imported
+    VehicleMeshes of that vehicle which have no EnvironmentMesh to be built from.
+    VehicleMeshes built from an EnvironmentMesh are not candidates themselves: they are
+    found or built from the EnvironmentMesh when the route is calculated.
 
-    Args:
-        start_lat, start_lon, end_lat, end_lon: Coordinate bounds
-        vehicle_type: Optional vehicle type to prioritize in search
-
-    Returns:
-        List of mesh objects in priority order, or None if no suitable meshes found
+    Returns a list of Mesh objects, ordered smallest first from the most recent creation
+    date, or None if there are none.
     """
 
-    def get_meshes_in_bounds(model_class):
-        """Helper function to get meshes of a specific type within coordinate bounds"""
-        return model_class.objects.filter(
+    usable = Q(environmentmesh__isnull=False)
+    if vehicle_type:
+        usable |= Q(
+            vehiclemesh__vehicle_id=vehicle_type,
+            vehiclemesh__environment_mesh__isnull=True,
+        )
+
+    # get meshes which contain both start and end points
+    containing_meshes = (
+        Mesh.objects.filter(usable)
+        .filter(
             lat_min__lte=start_lat,
             lat_max__gte=start_lat,
             lon_min__lte=start_lon,
             lon_max__gte=start_lon,
-        ).filter(
+        )
+        .filter(
             lat_min__lte=end_lat,
             lat_max__gte=end_lat,
             lon_min__lte=end_lon,
             lon_max__gte=end_lon,
         )
+    )
 
-    def filter_latest_and_smallest(meshes):
-        """Helper function to filter by latest date and return smallest meshes"""
-        if not meshes.exists():
-            return []
-
-        latest_date = meshes.latest("created").created.date()
-        valid_meshes = meshes.filter(created__date=latest_date)
-        return sorted(valid_meshes, key=lambda mesh: mesh.size)
-
-    try:
-        # VehicleMesh for specific vehicle type (if specified)
-        if vehicle_type:
-            try:
-                vehicle = Vehicle.objects.get(vessel_type=vehicle_type)
-                vehicle_meshes = get_meshes_in_bounds(VehicleMesh).filter(
-                    vehicle=vehicle
-                )
-                result = filter_latest_and_smallest(vehicle_meshes)
-                if result:
-                    return result
-            except Vehicle.DoesNotExist:
-                pass
-
-        # If no vehicle_type specified, or specific vehicle type not found
-        environment_meshes = get_meshes_in_bounds(EnvironmentMesh)
-        result = filter_latest_and_smallest(environment_meshes)
-        if result:
-            return result
-
+    latest = containing_meshes.order_by("-created").first()
+    if latest is None:
         return None
 
-    except (EnvironmentMesh.DoesNotExist, VehicleMesh.DoesNotExist):
-        return None
+    # get all valid meshes from the most recent creation date, smallest first. Where meshes
+    # are the same size, imported vehicle meshes come first, as they don't need to be built.
+    valid_meshes = list(containing_meshes.filter(created__date=latest.created.date()))
+    vehicle_mesh_ids = set(
+        VehicleMesh.objects.filter(pk__in=[m.pk for m in valid_meshes]).values_list(
+            "pk", flat=True
+        )
+    )
+    return sorted(
+        valid_meshes, key=lambda mesh: (mesh.size, mesh.pk not in vehicle_mesh_ids)
+    )
 
 
 def route_exists(
-    meshes: Union[VehicleMesh, list[VehicleMesh]],
+    meshes: Mesh | list[Mesh],
     start_lat: float,
     start_lon: float,
     end_lat: float,
     end_lon: float,
+    vehicle: Vehicle,
 ) -> Route | None:
-    """Check if a route of given parameters has already been calculated.
-    Works through list of VehicleMesh objects in order, returns first matching route.
-    Only applies to VehicleMesh objects. Return None if not and the route object if it has.
-
-    Args:
-        meshes: VehicleMesh object or list of VehicleMesh objects
+    """Check if a route of given parameters has already been calculated for the vehicle.
+    Works through list of meshes in order, returns first matching route
+    Return None if not and the route object if it has.
     """
 
-    if isinstance(meshes, VehicleMesh):
+    if isinstance(meshes, Mesh):
         meshes = [meshes]
 
     for mesh in meshes:
-        same_mesh_routes = Route.objects.filter(mesh=mesh)
+        same_mesh_routes = Route.objects.filter(mesh=mesh, vehicle=vehicle)
 
         # use set to preserve uniqueness
         successful_route_ids = set()
@@ -208,63 +208,30 @@ def _closest_route_in_tolerance(
         return Route.objects.get(id=closest_route["id"])
 
 
-def calculate_md5(filename):
-    """create md5sum checksum for any file"""
-    hash_md5 = hashlib.md5()
-
-    with open(filename, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hash_md5.update(chunk)
-    return hash_md5.hexdigest()
-
-
 def evaluate_route(route_json: dict, mesh: VehicleMesh) -> dict:
-    """Run calculate_route method from PolarRoute to evaluate the fuel usage and travel time of a route.
+    """Run route_calc method from PolarRoute to evaluate the fuel usage and travel time of a route.
 
     Args:
         route_json (dict): route to evaluate in geojson format.
-        mesh (VehicleMesh): VehicleMesh object on which to evaluate the route.
+        mesh (VehicleMesh): mesh including vehicle performance on which to evaluate the route.
 
     Returns:
         dict: evaluated route
     """
 
-    if route_json["features"][0].get("properties", None) is None:
-        route_json["features"][0]["properties"] = {"from": "Start", "to": "End"}
-
-    # Extract coordinates from GeoJSON
-    coordinates = route_json["features"][0]["geometry"]["coordinates"]
-
-    waypoints = []
-    for i, coord in enumerate(coordinates):
-        name = "Start" if i == 0 else ("End" if i == len(coordinates) - 1 else f"WP{i}")
-        source = "X" if i == 0 else np.nan
-        dest = "X" if i == len(coordinates) - 1 else np.nan
-
-        waypoints.append(
-            {
-                "Name": name,
-                "Lat": coord[1],
-                "Long": coord[0],
-                "Source": source,
-                "Destination": dest,
-                "order": i,
-                "id": 0,  # Single route ID
-            }
-        )
-
-    df = pd.DataFrame(waypoints)
+    properties = route_json["features"][0].get("properties")
+    if properties is None:
+        properties = route_json["features"][0]["properties"] = {}
+    properties.setdefault("from", "Start")
+    properties.setdefault("to", "End")
 
     try:
-        # Use route_calc API signature: (df, from_wp, to_wp, mesh, route_type)
-        calc_route = route_calc(
-            df=df, from_wp="Start", to_wp="End", mesh=mesh.json, route_type="smoothed"
-        )
+        calc_route = route_calc(route_json, mesh=mesh.json, route_type="smoothed")
         time_days = calc_route["features"][0]["properties"]["traveltime"][-1]
         time_str = convert_decimal_days(time_days)
         fuel = round(calc_route["features"][0]["properties"]["fuel"][-1], 2)
 
-    except Exception:
+    except Exception:  # noqa BLE001
         logger.exception("Error in evaluate_route")
         return None
 
@@ -277,40 +244,33 @@ def evaluate_route(route_json: dict, mesh: VehicleMesh) -> dict:
 
 
 def select_mesh_for_route_evaluation(
-    route: dict, vehicle_type: str = None
-) -> Union[list[VehicleMesh], None]:
-    """Select VehicleMesh from the database to be used for route evaluation.
-
-    The latest mesh containing all points in the route will be chosen.
-    If no suitable VehicleMesh objects are available, return None.
+    route: dict, vehicle_type: str | None = None
+) -> list[Mesh] | None:
+    """Select meshes from the database to be used for route evaluation.
+    The latest meshes containing all points in the route will be chosen.
+    If no suitable meshes are available, return None.
 
     Args:
         route (dict): GeoJSON route to be evaluated.
-        vehicle_type (str, optional): Specific vehicle type to look for.
+        vehicle_type (str, optional): vehicle the route is evaluated for.
 
     Returns:
-        Union[list[VehicleMesh], None]: Selected VehicleMesh objects or None.
+        list[Mesh] | None: Selected mesh objects or None.
     """
 
+    # GeoJSON coordinates are [longitude, latitude]
     coordinates = route["features"][0]["geometry"]["coordinates"]
-    lats = [c[0] for c in coordinates]
-    lons = [c[1] for c in coordinates]
+    lons = [c[0] for c in coordinates]
+    lats = [c[1] for c in coordinates]
 
-    # Use select_mesh with vehicle_type parameter, but specify vehicle type
-    meshes = select_mesh(min(lats), min(lons), max(lats), max(lons), vehicle_type)
-
-    if meshes:
-        vehicle_meshes = [mesh for mesh in meshes if isinstance(mesh, VehicleMesh)]
-        return vehicle_meshes if vehicle_meshes else None
-
-    return None
+    return select_mesh(min(lats), min(lons), max(lats), max(lons), vehicle_type)
 
 
-def check_mesh_data(mesh: Union[EnvironmentMesh, VehicleMesh]) -> str:
+def check_mesh_data(mesh: Mesh) -> str:
     """Check a mesh object for missing data sources.
 
     Args:
-        mesh (Union[EnvironmentMesh, VehicleMesh]): mesh object to evaluate.
+        mesh (Mesh): mesh object to evaluate.
 
     Returns:
         A user-friendly warning message as a string.
@@ -349,135 +309,117 @@ def check_mesh_data(mesh: Union[EnvironmentMesh, VehicleMesh]) -> str:
     return message
 
 
-def ingest_mesh(
-    mesh_json: Dict[str, Any],
-    mesh_filename: str,
-    metadata_record: Dict[str, Any] = None,
-    expected_md5: str = None,
-) -> Tuple[Union[EnvironmentMesh, VehicleMesh], bool, str]:
-    """
-    Ingest a mesh into the database, automatically detecting mesh type.
+def check_missing_ice_data(mesh: Mesh) -> str:
+    """Check a mesh object for sea cells without sea ice concentration (SIC) data.
 
-    This function handles creating either EnvironmentMesh or VehicleMesh records
-    based on the mesh content. For vehicle meshes, it automatically creates Vehicle
-    records if they don't exist. It also calculates MD5 hash internally and optionally
-    validates against expected MD5.
+    PolarRoute treats a missing SIC as ice-free when modelling vehicle performance, so
+    routes through these cells are not slowed or avoided because of ice.
 
     Args:
-        mesh_json (Dict[str, Any]): The mesh JSON
-        mesh_filename (str): Name of the mesh file
-        metadata_record (Dict[str, Any], optional): Metadata record from upload metadata
-        expected_md5 (str, optional): Expected MD5 hash for validation
+        mesh (Mesh): mesh object to evaluate.
 
     Returns:
-        Tuple[Union[EnvironmentMesh, VehicleMesh], bool, str]:
-            - The created mesh object
-            - Whether a new mesh was created (True) or existing found (False)
-            - The mesh type ("EnvironmentMesh" or "VehicleMesh")
+        A user-friendly warning message as a string, empty if no data is missing.
+    """
+
+    sea_cells = [c for c in mesh.json.get("cellboxes", []) if not c.get("land")]
+    missing = sum(
+        1
+        for c in sea_cells
+        if c.get("SIC") is None
+        or (isinstance(c["SIC"], float) and math.isnan(c["SIC"]))
+    )
+    if missing == 0:
+        return ""
+
+    return (
+        f"Warning: {missing} of {len(sea_cells)} sea cells have no sea ice concentration data, "
+        "these are treated as ice-free.\n"
+    )
+
+
+def _get_or_create_vehicle(vessel_info: dict) -> Vehicle:
+    """Find the Vehicle for the vessel_info of a mesh, creating it if it doesn't exist."""
+
+    vessel_type = vessel_info.get("vessel_type")
+    if not vessel_type:
+        raise ValueError("Vehicle mesh found but no vessel_type specified in config")
+
+    vehicle = Vehicle.objects.filter(vessel_type=vessel_type).first()
+    if vehicle is not None:
+        return vehicle
+
+    max_speed = vessel_info.get("max_speed")
+    unit = vessel_info.get("unit")
+    if max_speed is None or not unit:
+        raise ValueError(
+            f"Vehicle mesh missing required fields: max_speed={max_speed}, unit={unit}"
+        )
+
+    logger.info(f"Vehicle type '{vessel_type}' not found in database, creating it")
+    return Vehicle.objects.create(
+        vessel_type=vessel_type,
+        max_speed=max_speed,
+        unit=unit,
+        created=timezone.now(),
+        created_by="mesh ingestion",
+        **{f: vessel_info[f] for f in VEHICLE_OPTIONAL_FIELDS if f in vessel_info},
+    )
+
+
+def ingest_mesh(
+    mesh_json: dict[str, Any],
+    mesh_filename: str,
+    metadata_record: dict[str, Any] | None = None,
+    expected_md5: str | None = None,
+) -> tuple[Mesh, bool, str]:
+    """Ingest a mesh into the database.
+
+    A mesh with `vessel_info` in its config is a VehicleMesh (its Vehicle is created if it
+    doesn't exist), otherwise it is an EnvironmentMesh. Meshes are identified by the md5
+    of their json, so a mesh already in the database is not added again.
+
+    Args:
+        mesh_json: The mesh JSON.
+        mesh_filename: Name of the mesh file.
+        metadata_record: Record from the mesh upload metadata. If not given the
+            mesh is treated as manually inserted.
+        expected_md5: If given, the md5 the mesh is required to have.
+
+    Returns:
+        The mesh object, whether it was newly created, and the mesh type
+        ("EnvironmentMesh" or "VehicleMesh").
 
     Raises:
-        ValueError: If vehicle mesh is missing required configuration or MD5 mismatch
-        Exception: If vehicle creation fails
+        ValueError: if the json is not a mesh, the md5 doesn't match or the vehicle
+            information is incomplete.
     """
-    # Calculate MD5 hash from mesh JSON
-    tfile = NamedTemporaryFile(mode="w+", delete=True)
-    json.dump(mesh_json, tfile, indent=4)
-    tfile.flush()
-    md5 = calculate_md5(tfile.name)
 
-    # Validate MD5 if expected hash is provided
+    try:
+        config = mesh_json["config"]
+        region = config["mesh_info"]["region"]
+    except (KeyError, TypeError) as e:
+        raise NotAMeshError(f"{mesh_filename} is not a mesh: missing {e}") from e
+
+    md5 = hashlib.md5(json.dumps(mesh_json, indent=4).encode()).hexdigest()
     if expected_md5 and md5 != expected_md5:
         raise ValueError(f"Mesh MD5 {md5} does not match expected MD5 {expected_md5}")
 
-    # Clean JSON data to handle NaN values and None in critical fields
-    def clean_json_data(obj, path=""):
-        """
-        Recursively clean JSON data to replace NaN with None and handle None in critical fields.
-
-        Args:
-            obj: Object to clean
-            path: Current path in the JSON structure (for debugging)
-        """
-        if isinstance(obj, dict):
-            # Special handling for cellbox agg_data
-            if "agg_data" in obj and isinstance(obj["agg_data"], dict):
-                if obj["agg_data"].get("SIC") is None:
-                    # SIC (Sea Ice Concentration): None -> 0.0 (no ice)
-                    obj["agg_data"]["SIC"] = 0.0
-                    logger.debug(f"Replaced None SIC value with 0.0 at {path}")
-
-                if obj["agg_data"].get("thickness") is None:
-                    obj["agg_data"]["thickness"] = 0.0
-
-                if obj["agg_data"].get("density") is None:
-                    obj["agg_data"]["density"] = 0.0
-
-            # Special handling for cellboxes with direct SIC/thickness/density fields
-            if "id" in obj and any(
-                key in obj for key in ["SIC", "thickness", "density"]
-            ):
-                if obj.get("SIC") is None:
-                    obj["SIC"] = 0.0
-                    logger.debug(f"Replaced None SIC value with 0.0 at {path}")
-
-                if obj.get("thickness") is None:
-                    obj["thickness"] = 0.0
-
-                if obj.get("density") is None:
-                    obj["density"] = 0.0
-
-            return {k: clean_json_data(v, f"{path}.{k}") for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [clean_json_data(item, f"{path}[{i}]") for i, item in enumerate(obj)]
-        elif isinstance(obj, float):
-            import math
-
-            if math.isnan(obj):
-                return None
-            elif math.isinf(obj):
-                return None
-            return obj
-        return obj
-
-    cleaned_mesh_json = clean_json_data(mesh_json)
-
-    # Determine if this is a vehicle mesh or environment mesh
-    is_vehicle_mesh = False
-    vehicle_type = None
-
-    config = cleaned_mesh_json.get("config", {})
-
-    # Look for vessel configuration in the mesh
-    if "vessel_info" in config:
-        is_vehicle_mesh = True
-        vessel_config = config["vessel_info"]
-        vehicle_type = vessel_config.get("vessel_type")
-        logger.info(f"Found vessel config with type: {vehicle_type}")
-
-    mesh_type = "VehicleMesh" if is_vehicle_mesh else "EnvironmentMesh"
-    logger.info(f"Processing {mesh_type}: {mesh_filename}")
-
-    # Prepare mesh defaults
+    defaults = {
+        "name": mesh_filename,
+        "valid_date_start": datetime.strptime(region["start_time"], "%Y-%m-%d").replace(
+            tzinfo=UTC
+        ),
+        "valid_date_end": datetime.strptime(region["end_time"], "%Y-%m-%d").replace(
+            tzinfo=UTC
+        ),
+        "json": mesh_json,
+    }
     if metadata_record:
-        # Use metadata record for date and coordinate information
-        mesh_defaults = {
-            "name": mesh_filename,
-            "valid_date_start": timezone.make_aware(
-                datetime.strptime(
-                    cleaned_mesh_json["config"]["mesh_info"]["region"]["start_time"],
-                    "%Y-%m-%d",
-                )
-            ),
-            "valid_date_end": timezone.make_aware(
-                datetime.strptime(
-                    cleaned_mesh_json["config"]["mesh_info"]["region"]["end_time"],
-                    "%Y-%m-%d",
-                )
-            ),
-            "created": timezone.make_aware(
-                datetime.strptime(metadata_record["created"], "%Y%m%dT%H%M%S")
-            ),
-            "json": cleaned_mesh_json,
+        defaults |= {
+            "created": datetime.strptime(
+                metadata_record["created"], "%Y%m%dT%H%M%S"
+            ).replace(tzinfo=UTC),
             "meshiphi_version": metadata_record["meshiphi"],
             "lat_min": metadata_record["latlong"]["latmin"],
             "lat_max": metadata_record["latlong"]["latmax"],
@@ -485,128 +427,51 @@ def ingest_mesh(
             "lon_max": metadata_record["latlong"]["lonmax"],
         }
     else:
-        # Use mesh data for coordinate information (manual insertion)
-        mesh_defaults = {
-            "name": mesh_filename,
-            "valid_date_start": timezone.make_aware(
-                datetime.strptime(
-                    cleaned_mesh_json["config"]["mesh_info"]["region"]["start_time"],
-                    "%Y-%m-%d",
-                )
-            ),
-            "valid_date_end": timezone.make_aware(
-                datetime.strptime(
-                    cleaned_mesh_json["config"]["mesh_info"]["region"]["end_time"],
-                    "%Y-%m-%d",
-                )
-            ),
+        defaults |= {
             "created": timezone.now(),
-            "json": cleaned_mesh_json,
             "meshiphi_version": "manually_inserted",
-            "lat_min": cleaned_mesh_json["config"]["mesh_info"]["region"]["lat_min"],
-            "lat_max": cleaned_mesh_json["config"]["mesh_info"]["region"]["lat_max"],
-            "lon_min": cleaned_mesh_json["config"]["mesh_info"]["region"]["long_min"],
-            "lon_max": cleaned_mesh_json["config"]["mesh_info"]["region"]["long_max"],
+            "lat_min": region["lat_min"],
+            "lat_max": region["lat_max"],
+            "lon_min": region["long_min"],
+            "lon_max": region["long_max"],
         }
 
-    if is_vehicle_mesh:
-        if not vehicle_type:
-            raise ValueError(
-                "Vehicle mesh found but no vessel_type specified in config"
-            )
+    if "vessel_info" in config:
+        defaults["vehicle"] = _get_or_create_vehicle(config["vessel_info"])
+        mesh, created = VehicleMesh.objects.get_or_create(md5=md5, defaults=defaults)
+        return mesh, created, "VehicleMesh"
 
-        # For vehicle meshes, we need to determine the vehicle type
-        try:
-            vehicle = Vehicle.objects.get(vessel_type=vehicle_type)
-            logger.info(f"Found existing vehicle type '{vehicle_type}' in database")
-        except Vehicle.DoesNotExist:
-            logger.info(
-                f"Vehicle type '{vehicle_type}' not found in database, creating new vehicle"
-            )
-
-            # Get vessel config
-            vessel_config = config.get("vessel_info", {})
-
-            # Extract required fields from vessel config
-            max_speed = vessel_config.get("max_speed")
-            unit = vessel_config.get("unit")
-
-            if not max_speed or not unit:
-                raise ValueError(
-                    f"Vehicle mesh missing required fields: max_speed={max_speed}, unit={unit}"
-                )
-
-            # Create new Vehicle from vessel config
-            vehicle_data = {
-                "vessel_type": vehicle_type,
-                "max_speed": max_speed,
-                "unit": unit,
-                "created": timezone.now(),
-            }
-
-            # Add optional fields if they exist in the vessel config
-            optional_fields = [
-                "max_ice_conc",
-                "min_depth",
-                "max_wave",
-                "excluded_zones",
-                "neighbour_splitting",
-                "beam",
-                "hull_type",
-                "force_limit",
-            ]
-
-            for field in optional_fields:
-                if field in vessel_config:
-                    vehicle_data[field] = vessel_config[field]
-
-            try:
-                vehicle = Vehicle.objects.create(**vehicle_data)
-                logger.info(f"Created new vehicle '{vehicle_type}' in database")
-            except Exception as e:
-                raise Exception(f"Failed to create vehicle '{vehicle_type}': {e}")
-
-        # Create VehicleMesh
-        mesh_defaults["vehicle"] = vehicle
-        mesh_defaults["environment_mesh"] = None
-
-        mesh, created = VehicleMesh.objects.get_or_create(
-            md5=md5, defaults=mesh_defaults
-        )
-    else:
-        # Create EnvironmentMesh
-        mesh, created = EnvironmentMesh.objects.get_or_create(
-            md5=md5, defaults=mesh_defaults
-        )
-
-    return mesh, created, mesh_type
+    mesh, created = EnvironmentMesh.objects.get_or_create(md5=md5, defaults=defaults)
+    return mesh, created, "EnvironmentMesh"
 
 
-def optimise_route(mesh_json: dict, route) -> list:
-    """
-    Calculate optimal route using PolarRoute.
+def get_energy_source(mesh_json: dict) -> str:
+    """Return which energy use ("fuel" or "battery") the vehicle performance in a mesh models."""
 
-    This function performs the core route optimization using PolarRoute's RoutePlanner.
-    Requires a VehicleMesh.
+    cellboxes = mesh_json["cellboxes"]
+    for source in ("fuel", "battery"):
+        if any(source in cellbox for cellbox in cellboxes):
+            return source
+    raise ValueError("Mesh has no vehicle performance data for fuel or battery use.")
+
+
+def optimise_route(mesh_json: dict, route: Route) -> list:
+    """Calculate optimal routes with PolarRoute from a mesh with vehicle performance.
+
+    The route is optimised for travel time and for the energy use the vehicle in the mesh
+    models (fuel or battery). The Route is updated in the database as results become available.
 
     Args:
-        mesh_json (dict): Vehicle mesh
-        route (Route): Route database object with start/end coordinates and metadata
+        mesh_json: json of a VehicleMesh.
+        route: Route database object with start/end coordinates and metadata.
 
     Returns:
         smoothed routes as list of geojson dictionaries
     """
     logger.info(f"Calculating route optimization for route {route.id}")
 
-    # Detect energy source based on vehicle type using configuration
-    vehicle = route.vehicle
-
-    # Get energy source from settings configuration
-    energy_source = settings.VEHICLE_ENERGY_SOURCES.get(
-        vehicle.vessel_type, settings.DEFAULT_ENERGY_SOURCE
-    )
-
-    logger.info(f"Detected energy source in mesh: {energy_source}")
+    energy_source = get_energy_source(mesh_json)
+    logger.info(f"Optimising for {energy_source} use.")
 
     # convert waypoints into pandas dataframe for PolarRoute
     waypoints = pd.DataFrame(
@@ -625,20 +490,15 @@ def optimise_route(mesh_json: dict, route) -> list:
     unsmoothed_routes = []
     route_planners = []
 
-    # Select the appropriate energy config based on detected energy source
-    if energy_source == "fuel":
-        energy_config = settings.FUEL_CONFIG
-    elif energy_source == "battery":
-        energy_config = settings.BATTERY_CONFIG
-    else:
-        raise ValueError(f"Unsupported energy source: {energy_source}")
+    energy_config = {"fuel": settings.FUEL_CONFIG, "battery": settings.BATTERY_CONFIG}[
+        energy_source
+    ]
+    # path variables have to be the same for both optimisations, and match the vehicle
+    traveltime_config = settings.TRAVELTIME_CONFIG | {
+        "path_variables": energy_config["path_variables"]
+    }
 
-    configs = (
-        settings.TRAVELTIME_CONFIG,
-        energy_config,
-    )
-
-    for config in configs:
+    for config in (traveltime_config, energy_config):
         rp = RoutePlanner(copy.deepcopy(mesh_json), config)
 
         # Calculate optimal dijkstra path between waypoints
@@ -657,9 +517,8 @@ def optimise_route(mesh_json: dict, route) -> list:
         ]
         unsmoothed_routes.append(route_geojson)
 
-    # Update route with unsmoothed data
+    # Update route with unsmoothed data, it is only complete once smoothed
     route.json_unsmoothed = unsmoothed_routes
-    route.calculated = timezone.now()
     route.polar_route_version = polar_route.__version__
     route.save()
 
@@ -684,154 +543,110 @@ def optimise_route(mesh_json: dict, route) -> list:
     return smoothed_routes
 
 
-def add_vehicle_to_environment_mesh(environment_mesh, vehicle):
-    """
-    Create a VehicleMesh by adding vehicle to an EnvironmentMesh.
+def add_vehicle_to_environment_mesh(
+    environment_mesh: EnvironmentMesh, vehicle: Vehicle
+) -> VehicleMesh:
+    """Get the VehicleMesh for an EnvironmentMesh and Vehicle, building it if it doesn't exist.
 
-    Args:
-        environment_mesh (EnvironmentMesh): EnvironmentMesh
-        vehicle (Vehicle): Vehicle object
-
-    Returns:
-        VehicleMesh: Newly created VehicleMesh
+    Building adds the performance of the vehicle to the environment mesh using PolarRoute's
+    VesselPerformanceModeller. The VehicleMesh takes the validity, region and creation time
+    of the EnvironmentMesh.
 
     Raises:
-        RuntimeError: If vessel addition fails
+        RuntimeError: if the performance modelling fails, for example because
+            PolarRoute has no performance model for the vessel_type.
     """
+
+    existing = VehicleMesh.objects.filter(
+        environment_mesh=environment_mesh, vehicle=vehicle
+    ).first()
+    if existing is not None:
+        return existing
+
     logger.info(
         f"Adding vehicle {vehicle.vessel_type} to environment mesh {environment_mesh.id}"
     )
 
-    # Create vehicle config dictionary from Vehicle model
     vehicle_config = {
         "vessel_type": vehicle.vessel_type,
         "max_speed": vehicle.max_speed,
         "unit": vehicle.unit,
     }
-
-    # Add optional vehicle properties if they exist
-    optional_fields = [
-        "max_ice_conc",
-        "min_depth",
-        "max_wave",
-        "excluded_zones",
-        "neighbour_splitting",
-        "beam",
-        "hull_type",
-        "force_limit",
-    ]
-
-    for field in optional_fields:
-        value = getattr(vehicle, field, None)
+    for field in VEHICLE_OPTIONAL_FIELDS:
+        value = getattr(vehicle, field)
         if value is not None:
             vehicle_config[field] = value
 
     try:
-        # Clean the environment mesh data before processing to handle None values
-        def clean_mesh_data(obj, path=""):
-            """Clean mesh data to handle None values in critical fields."""
-            if isinstance(obj, dict):
-                if "agg_data" in obj and isinstance(obj["agg_data"], dict):
-                    if obj["agg_data"].get("SIC") is None:
-                        obj["agg_data"]["SIC"] = 0.0
-                        logger.debug(f"Replaced None SIC value with 0.0 at {path}")
-                    if obj["agg_data"].get("thickness") is None:
-                        obj["agg_data"]["thickness"] = 0.0
-                    if obj["agg_data"].get("density") is None:
-                        obj["agg_data"]["density"] = 0.0
-
-                if "id" in obj and any(
-                    key in obj for key in ["SIC", "thickness", "density"]
-                ):
-                    if obj.get("SIC") is None:
-                        obj["SIC"] = 0.0
-                        logger.debug(f"Replaced None SIC value with 0.0 at {path}")
-                    if obj.get("thickness") is None:
-                        obj["thickness"] = 0.0
-                    if obj.get("density") is None:
-                        obj["density"] = 0.0
-
-                return {k: clean_mesh_data(v, f"{path}.{k}") for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [
-                    clean_mesh_data(item, f"{path}[{i}]") for i, item in enumerate(obj)
-                ]
-            elif isinstance(obj, float):
-                import math
-
-                if math.isnan(obj) or math.isinf(obj):
-                    return None
-                return obj
-            return obj
-
-        cleaned_mesh_json = clean_mesh_data(copy.deepcopy(environment_mesh.json))
-
-        # Use VesselPerformanceModeller to add vehicle performance to the mesh
-        logger.info(f"Running vessel performance modelling for {vehicle.vessel_type}")
-
-        # Try to initialize with the vessel_type first
-        try:
-            vp = VesselPerformanceModeller(
-                env_mesh_json=cleaned_mesh_json, vessel_config=vehicle_config
-            )
-        except ValueError as e:
-            if "not in known list of vessels" in str(e):
-                # If vessel type is not recognized, use custom_vessel with ExampleShip as base
-                logger.info(
-                    f"Vessel type '{vehicle.vessel_type}' does not have a performance model in PolarRoute {polar_route.__version__}, using ExampleShip as base model"
-                )
-                vp = VesselPerformanceModeller(
-                    env_mesh_json=cleaned_mesh_json,
-                    vessel_config=vehicle_config,
-                    custom_vessel=ExampleShip,
-                )
-            else:
-                raise
-
-        # Model accessibility (determines which cells are accessible to this vessel)
+        vp = VesselPerformanceModeller(
+            env_mesh_json=copy.deepcopy(environment_mesh.json),
+            vessel_config=vehicle_config,
+        )
         vp.model_accessibility()
-
-        # Model performance (calculates vessel-specific performance metrics)
         vp.model_performance()
-
-        # Get the modified mesh with vessel performance data
         vessel_mesh_json = vp.to_json()
-
-        logger.info(f"Vessel performance modelling completed for {vehicle.vessel_type}")
-
-    except Exception as e:
+    except Exception as e:  # noqa BLE001
         logger.error(f"Error during vessel performance modelling: {e}")
         raise RuntimeError(
             f"Failed to create vehicle mesh for {vehicle.vessel_type}: {e}"
+        ) from e
+
+    try:
+        with transaction.atomic():
+            vehicle_mesh = VehicleMesh.objects.create(
+                environment_mesh=environment_mesh,
+                vehicle=vehicle,
+                meshiphi_version=environment_mesh.meshiphi_version,
+                md5=hashlib.md5(
+                    json.dumps(vessel_mesh_json, indent=4).encode()
+                ).hexdigest(),
+                valid_date_start=environment_mesh.valid_date_start,
+                valid_date_end=environment_mesh.valid_date_end,
+                created=environment_mesh.created,
+                lat_min=environment_mesh.lat_min,
+                lat_max=environment_mesh.lat_max,
+                lon_min=environment_mesh.lon_min,
+                lon_max=environment_mesh.lon_max,
+                name=f"{environment_mesh.name}_vehicle_{vehicle.vessel_type}",
+                json=vessel_mesh_json,
+            )
+    except IntegrityError:
+        # another task built it at the same time
+        return VehicleMesh.objects.get(
+            environment_mesh=environment_mesh, vehicle=vehicle
         )
-
-    # Calculate MD5 for the processed vessel mesh data
-    tfile = NamedTemporaryFile(mode="w+", delete=True)
-    json.dump(vessel_mesh_json, tfile, indent=4)
-    tfile.flush()
-    vehicle_mesh_md5 = calculate_md5(tfile.name)
-
-    # Import here to avoid circular imports
-    from .models import VehicleMesh
-
-    # Create vehicle mesh by copying environment mesh metadata and updating with vessel data
-    vehicle_mesh = VehicleMesh.objects.create(
-        environment_mesh=environment_mesh,
-        vehicle=vehicle,
-        meshiphi_version=environment_mesh.meshiphi_version,
-        md5=vehicle_mesh_md5,
-        valid_date_start=environment_mesh.valid_date_start,
-        valid_date_end=environment_mesh.valid_date_end,
-        created=timezone.now(),
-        lat_min=environment_mesh.lat_min,
-        lat_max=environment_mesh.lat_max,
-        lon_min=environment_mesh.lon_min,
-        lon_max=environment_mesh.lon_max,
-        name=f"{environment_mesh.name}_vehicle_{vehicle.vessel_type}",
-        json=vessel_mesh_json,
-    )
 
     logger.info(
         f"Created VehicleMesh {vehicle_mesh.id} for vehicle {vehicle.vessel_type}"
     )
     return vehicle_mesh
+
+
+def get_vehicle_mesh(mesh: Mesh, vehicle: Vehicle) -> VehicleMesh:
+    """Get the mesh with the performance of a vehicle to calculate a route on.
+
+    Args:
+        mesh: an EnvironmentMesh, or a VehicleMesh (which is used as it is if it is for the
+            vehicle, otherwise the vehicle is added to the EnvironmentMesh it was built from).
+        vehicle: the vehicle the route is for.
+
+    Raises:
+        ValueError: if no mesh can be found for the vehicle.
+    """
+
+    vehicle_mesh = VehicleMesh.objects.filter(pk=mesh.pk).first()
+    if vehicle_mesh is not None:
+        if vehicle_mesh.vehicle_id == vehicle.pk:
+            return vehicle_mesh
+        environment_mesh = vehicle_mesh.environment_mesh
+        if environment_mesh is None:
+            raise ValueError(
+                f"Mesh {mesh.id} is for vehicle '{vehicle_mesh.vehicle_id}' and has no "
+                f"environment mesh to add vehicle '{vehicle.pk}' to."
+            )
+    else:
+        environment_mesh = EnvironmentMesh.objects.filter(pk=mesh.pk).first()
+        if environment_mesh is None:
+            raise ValueError(f"Mesh {mesh.id} is not an environment or vehicle mesh.")
+
+    return add_vehicle_to_environment_mesh(environment_mesh, vehicle)

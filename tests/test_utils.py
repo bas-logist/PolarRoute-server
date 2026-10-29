@@ -11,8 +11,8 @@ from django.utils import timezone
 from haversine import inverse_haversine, Unit, Direction
 import pytest
 
-from polarrouteserver.route_api.models import EnvironmentMesh, VehicleMesh, Vehicle, Job, Route
-from polarrouteserver.route_api.utils import evaluate_route, route_exists, select_mesh, select_mesh_for_route_evaluation, check_mesh_data
+from polarrouteserver.route_api.models import EnvironmentMesh, Mesh, VehicleMesh, Vehicle, Job, Route
+from polarrouteserver.route_api.utils import check_missing_ice_data, evaluate_route, get_vehicle_mesh, route_exists, select_mesh, select_mesh_for_route_evaluation, check_mesh_data
 from .utils import add_test_environment_mesh_to_db, add_test_vehicle_mesh_to_db, create_test_vehicle
 
 class TestRouteExists(TestCase):
@@ -58,6 +58,7 @@ class TestRouteExists(TestCase):
                 start_lon=self.start_lon,
                 end_lat=self.end_lat,
                 end_lon=self.end_lon,
+                vehicle=self.vehicle,
             )
         assert route == self.route
 
@@ -74,6 +75,7 @@ class TestRouteExists(TestCase):
                 start_lon=self.start_lon,
                 end_lat=self.end_lat,
                 end_lon=self.end_lon,
+                vehicle=self.vehicle,
             )
         assert route == None
 
@@ -91,7 +93,25 @@ class TestRouteExists(TestCase):
                 start_lon=0,
                 end_lat=0,
                 end_lon=0,
+                vehicle=self.vehicle,
             )
+        assert route is None
+
+    def test_route_for_other_vehicle_not_returned(self):
+        "A route calculated for one vehicle is not returned for another vehicle."
+
+        other_vehicle = Vehicle.objects.create(
+            vessel_type="OTHER_VESSEL", max_speed=10.0, unit="km/hr"
+        )
+
+        route = route_exists(
+            self.mesh,
+            start_lat=self.start_lat,
+            start_lon=self.start_lon,
+            end_lat=self.end_lat,
+            end_lon=self.end_lon,
+            vehicle=other_vehicle,
+        )
         assert route is None
 
     def test_exact_route_returned(self):
@@ -135,6 +155,7 @@ class TestRouteExists(TestCase):
                 start_lon=self.start_lon,
                 end_lat=self.end_lat,
                 end_lon=self.end_lon,
+                vehicle=self.vehicle,
             )
         assert route == self.route
 
@@ -180,6 +201,7 @@ class TestRouteExists(TestCase):
                 start_lon=self.start_lon,
                 end_lat=self.end_lat,
                 end_lon=self.end_lon,
+                vehicle=self.vehicle,
             )
         assert route == closest_route
 
@@ -202,12 +224,13 @@ class TestSelectMesh(TestCase):
         )
 
     def test_select_mesh(self):
-        assert select_mesh(
+        meshes = select_mesh(
             start_lat = -60,
             start_lon = -55,
             end_lat   = -80,
             end_lon   = -110
-        ) == [self.southern_mesh]
+        )
+        assert [m.id for m in meshes] == [self.southern_mesh.id]
 
         # test that when no containing mesh available, the result is None
         assert select_mesh(
@@ -248,44 +271,107 @@ class TestSelectMesh(TestCase):
         assert self.smaller_mesh.size < self.southern_mesh.size
         assert self.smallest_mesh.size < self.smaller_mesh.size
 
-        assert select_mesh(
+        meshes = select_mesh(
             start_lat = -60,
             start_lon = -55,
             end_lat   = -80,
             end_lon   = -110
-        ) == [self.smallest_mesh, self.smaller_mesh, self.southern_mesh]
+        )
+        assert [m.id for m in meshes] == [
+            self.smallest_mesh.id,
+            self.smaller_mesh.id,
+            self.southern_mesh.id,
+        ]
+
+    def test_select_mesh_candidates(self):
+        """Only environment meshes and imported vehicle meshes of the requested vehicle are candidates."""
+
+        vehicle = Vehicle.objects.create(vessel_type="V1", max_speed=10.0, unit="km/hr")
+        other_vehicle = Vehicle.objects.create(vessel_type="V2", max_speed=10.0, unit="km/hr")
+        region = dict(
+            valid_date_start=timezone.now().date(),
+            valid_date_end=timezone.now().date(),
+            created=datetime.datetime.now(datetime.UTC),
+            lat_min=-80.0, lat_max=-40.0, lon_min=-110.0, lon_max=-5.0,
+        )
+        # built from an environment mesh: found through the environment mesh instead
+        derived = VehicleMesh.objects.create(
+            name="derived", md5="derived", vehicle=vehicle,
+            environment_mesh=self.southern_mesh, **region
+        )
+        # imported, so with no environment mesh
+        imported = VehicleMesh.objects.create(name="imported", md5="imported", vehicle=vehicle, **region)
+        VehicleMesh.objects.create(name="other", md5="other", vehicle=other_vehicle, **region)
+
+        coords = dict(start_lat=-60, start_lon=-55, end_lat=-80, end_lon=-110)
+
+        ids = [m.id for m in select_mesh(**coords)]
+        assert ids == [self.southern_mesh.id]
+
+        ids = [m.id for m in select_mesh(**coords, vehicle_type="V1")]
+        assert sorted(ids) == sorted([self.southern_mesh.id, imported.id])
+        assert derived.id not in ids
+
+    def test_select_mesh_prefers_imported_vehicle_mesh_of_same_size(self):
+        """Imported vehicle meshes don't need to be built, so come first whichever was added first."""
+
+        vehicle = Vehicle.objects.create(vessel_type="V1", max_speed=10.0, unit="km/hr")
+        region = dict(
+            valid_date_start=self.southern_mesh.valid_date_start,
+            valid_date_end=self.southern_mesh.valid_date_end,
+            created=self.southern_mesh.created,
+            lat_min=self.southern_mesh.lat_min, lat_max=self.southern_mesh.lat_max,
+            lon_min=self.southern_mesh.lon_min, lon_max=self.southern_mesh.lon_max,
+        )
+        coords = dict(start_lat=-60, start_lon=-55, end_lat=-80, end_lon=-110)
+
+        # the environment mesh was added first
+        imported = VehicleMesh.objects.create(name="imported", md5="imported", vehicle=vehicle, **region)
+        meshes = select_mesh(**coords, vehicle_type="V1")
+        assert [m.id for m in meshes] == [imported.id, self.southern_mesh.id]
+
+        # the vehicle mesh was added first
+        Mesh.objects.all().delete()
+        imported = VehicleMesh.objects.create(name="imported", md5="imported", vehicle=vehicle, **region)
+        environment = EnvironmentMesh.objects.create(name="environment", md5="environment", **region)
+        meshes = select_mesh(**coords, vehicle_type="V1")
+        assert [m.id for m in meshes] == [imported.id, environment.id]
+
+    def test_select_mesh_latest_date_only(self):
+        EnvironmentMesh.objects.create(
+            name="older", md5="older",
+            valid_date_start=timezone.now().date(), valid_date_end=timezone.now().date(),
+            created=datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=2),
+            lat_min=-80.0, lat_max=-56.0, lon_min=-115.0, lon_max=0.0,
+        )
+        meshes = select_mesh(start_lat=-60, start_lon=-55, end_lat=-80, end_lon=-110)
+        assert [m.id for m in meshes] == [self.southern_mesh.id]
 
     def test_select_mesh_for_route_evaluation(self):
 
         self.mesh_for_evaluation = add_test_vehicle_mesh_to_db()
-        
-        # Verify we get a VehicleMesh
-        assert isinstance(self.mesh_for_evaluation, VehicleMesh)
 
         with open(settings.TEST_ROUTE_PATH) as fp:
             self.route_json = json.load(fp)
 
-        # The function expects VehicleMesh, need to provide vehicle_type
-        vehicle_meshes = select_mesh_for_route_evaluation(self.route_json, "TEST_VESSEL")
-        assert vehicle_meshes == [self.mesh_for_evaluation]
-        
-        # Verify the returned meshes are VehicleMesh instances
-        for mesh in vehicle_meshes:
-            assert isinstance(mesh, VehicleMesh)
+        meshes = select_mesh_for_route_evaluation(self.route_json, "TEST_VESSEL")
+        assert [m.id for m in meshes] == [self.mesh_for_evaluation.environment_mesh.id]
 
 @pytest.mark.django_db
 def test_evaluate_route():
-    add_test_vehicle_mesh_to_db()
+    vehicle_mesh = add_test_vehicle_mesh_to_db()
 
     with open(settings.TEST_ROUTE_PATH) as fp:
         route_json = json.load(fp)
 
-    mesh = select_mesh_for_route_evaluation(route_json, "TEST_VESSEL")
+    meshes = select_mesh_for_route_evaluation(route_json, "TEST_VESSEL")
+    assert meshes is not None
 
-    assert mesh is not None
-    assert isinstance(mesh[0], VehicleMesh)
+    # the vehicle mesh already exists for the environment mesh and vehicle, so it is found
+    mesh = get_vehicle_mesh(meshes[0], vehicle_mesh.vehicle)
+    assert mesh.id == vehicle_mesh.id
 
-    result = evaluate_route(route_json, mesh[0])
+    result = evaluate_route(route_json, mesh)
     assert isinstance(result, dict)
 
 
@@ -322,3 +408,28 @@ class TestMeshDataMessage(TestCase):
             {"loader": "density", "params": {"files": [""]}},
         ]
         assert check_mesh_data(mesh) == "Warning: 2 of expected 3 days' data available for sea ice concentration.\n"
+
+
+class TestMissingIceDataMessage(TestCase):
+
+    def mesh_with_cells(self, cells):
+        mesh = add_test_environment_mesh_to_db()
+        mesh.json["cellboxes"] = cells
+        return mesh
+
+    def test_no_missing_ice_data(self):
+        mesh = self.mesh_with_cells([{"SIC": 0.0}, {"SIC": 50.0}])
+        assert check_missing_ice_data(mesh) == ""
+
+    def test_missing_ice_data_message(self):
+        mesh = self.mesh_with_cells(
+            [{"SIC": None}, {"SIC": float("nan")}, {}, {"SIC": 12.5}]
+        )
+        assert check_missing_ice_data(mesh) == (
+            "Warning: 3 of 4 sea cells have no sea ice concentration data, "
+            "these are treated as ice-free.\n"
+        )
+
+    def test_land_cells_are_not_counted(self):
+        mesh = self.mesh_with_cells([{"SIC": None, "land": True}, {"SIC": 10.0, "land": False}])
+        assert check_missing_ice_data(mesh) == ""

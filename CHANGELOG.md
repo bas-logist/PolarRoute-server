@@ -7,7 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `EnvironmentMesh` and `VehicleMesh`, so that routes can be requested for a specific vehicle. Both are kinds of `Mesh` and share its table and ids, so a mesh id identifies the same mesh everywhere. A `VehicleMesh` is an environment mesh with the performance of one vehicle added. At most one exists per environment mesh and vehicle.
+- Routes record their `Vehicle` and the `VehicleMesh` they were calculated on (`vehicle_mesh`). The vehicle is returned in the route response.
+- `create_and_calculate_route()` task, replacing the `optimise_route()` task. It finds or builds the `VehicleMesh` for the vehicle of the route from the mesh of the route, using PolarRoute's `VesselPerformanceModeller`, then calculates the route.
+- Battery-powered vehicles (for example `Slocum`, `BoatyMcBoatFace`): routes are optimised for traveltime and for `battery` or `fuel` use, whichever the vehicle mesh models.
+- A route's `info` warns when sea cells of the mesh have no sea ice concentration data, which PolarRoute treats as ice-free.
+- `Vehicle` fixtures for `SDA`, `Slocum` and `BoatyMcBoatFace`, added by the new `load_vehicle_fixtures` command when the docker container starts. Vehicles which exist already are not changed. Fixture vehicles can't be deleted through the API.
+- Automatic mesh import (`import_new_meshes`) now also imports environment meshes: any `.json` file in the upload metadata that is a mesh.
+
 ### Changed
+- **Breaking:** `vehicle_type` is required when requesting a route (`request_route.py` takes `-v/--vehicle`) and when evaluating a route. Requests without it are rejected with a 400, and with an unknown vehicle type a 404.
+- **Breaking:** in the route response, the type of the energy optimised route is now `energy` (previously `fuel`) and its metric is `energyConsumption`, with a `source` of `fuel` or `battery` (previously `fuelConsumption`).
+- `Mesh` rows which exist before upgrading are vessel meshes. The migration makes each of them a `VehicleMesh` with the same id, creating its `Vehicle` from the mesh's `vessel_info` if needed, and sets the vehicle and vehicle mesh of the routes calculated on it.
+- `select_mesh()` returns environment meshes, and imported vehicle meshes of the requested vehicle which have no environment mesh, with the imported vehicle mesh first where meshes are the same size. `route_exists()` only finds routes calculated for the same vehicle.
+- Mesh ingestion (`insert_mesh` and automatic import) works out the mesh type from the content: with `vessel_info` in its config it is a `VehicleMesh` (and its `Vehicle` is created if it doesn't exist), otherwise an `EnvironmentMesh`.
+- Automatic mesh import skips a mesh it can't read or ingest (for example a file which is still transferring) and carries on with the rest.
+- Mesh checksums for `insert_mesh` are now calculated in the same way as for automatic import, so a mesh inserted manually which was inserted by an earlier version will be added again.
+- A vehicle can't be deleted while vehicle meshes ingested for it exist. Vehicle meshes built for it are deleted with it.
+- Cleaning up an environment mesh (`cleanup_meshes`) also deletes the vehicle meshes built from it, unless one of them is protected.
+- `optimise_route()` is now a function (not a task) which optimises for traveltime and for the energy use modelled by the vehicle mesh.
 - The `polar-route` dependency is now pinned to `==1.2.0` (previously `==1.0.0`). This is the first release in which `route_calc` accepts a route geojson.
 - Updated `evaluate_route` to pass the route geojson directly to `route_calc`, removing the manual DataFrame construction and temporary file handling.
 - Replaced the GDAL system packages in the Docker image with `libexpat1` (needed by `rasterio`); `polar-route` 1.2.0 no longer depends on Fiona, and the Python geospatial wheels bundle GDAL.
@@ -15,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Disabled celery features which are deprecated by rabbitmq >= 4.3.
 - `evaluate_route` now passes `route_type="smoothed"` to `route_calc`, which `polar-route` 1.2.0 requires to be set.
+- Updating the properties of a vehicle (`force_properties`) deletes the vehicle meshes built for it, so they are rebuilt with the new properties.
+- Route evaluation selected meshes with the latitudes and longitudes of the route swapped.
 
 ## 0.3.0 - 2026-10-26
 
@@ -25,23 +46,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for Python < 3.12
 
 ### Added
-- Added `add_vehicle_to_environment_mesh()` function. 
-- A new `create_and_calculate_route()` task which is used to calculate optimal route using `VehicleMesh`, creating one if necessary (replaces `optimise_route()` task, which is now a function).
-- Adds `Vehicle` information to route response.
-- Adds `Vehicle` fixtures, with the `SDA`, `Slocum` and `BoatyMcBoatFace` vessel configs.
-- Expands testing suite to cover mesh type ingestion and `create_and_calculate_route()` tasks.
 - `/health/` endpoint and `HEALTHCHECK` in the Docker container. 
 - Docker production and development settings modules.
 - `compose.prod.yml` for modifying the compose config for production.
 
 ### Changed
-- Split instances of Mesh into `EnvironmentMesh` and `VehicleMesh`. `Mesh` has become an abstract class inherited by both.
-- Route requests now require a `Vehicle`.
-- Mesh ingestion has been adapted to handle the ingestion of both `EnvironmentMesh` and `VehicleMesh` files. If a `VehicleMesh` is ingested, it will identify the `Vehicle` and check if it exists in the database, if not it will create it.
-- `select_mesh()` updated to handle different types of meshes. In first instance search for a `VehicleMesh` that matches coordinates AND `Vehicle`. Should this not exists, then find an `EnvironmentMesh` within coordinates and create a `VehicleMesh` using supplied `Vehicle`.
-- `optimise_route()`is now a function which calls PolarRoute's optimisation functionality, not a task. The task has been replaced by `create_and_calculate_route()`.
-- Tests have been adapted (and where appropriate, expanded) to accommodate these changes.
-- PolarRoute 1.0.0 support, >= 1.1.8 required for custom vessel performance functionality.
 - Re-worked docker container to create a production build-stage.
 - Added static file collection to the docker entrypoint script.
 - A number of syntax changes throughout to comply with default rules enabled in ruff >0.16.

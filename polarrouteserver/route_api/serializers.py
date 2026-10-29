@@ -3,9 +3,10 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 from taggit.serializers import TaggitSerializer, TagListSerializerField
 
-from .models import EnvironmentMesh, VehicleMesh, Vehicle, Route, Job, Location
-from polarrouteserver.celery import app
 from polarrouteserver._version import __version__ as polarrouteserver_version
+from polarrouteserver.celery import app
+
+from .models import Job, Location, Mesh, Route, Vehicle
 
 
 class JobStatusSerializer(serializers.ModelSerializer):
@@ -164,7 +165,7 @@ class RouteSerializer(TaggitSerializer, serializers.ModelSerializer):
         elif total_battery is not None:
             metrics["energyConsumption"] = {
                 "value": total_battery,
-                "units": properties.get("battery_units") or "Ah / day",
+                "units": properties.get("battery_units") or "Ah",
                 "source": "battery",
             }
 
@@ -349,34 +350,13 @@ class RouteSerializer(TaggitSerializer, serializers.ModelSerializer):
         return result
 
 
-# Shared mesh fields for serializers
-MESH_FIELDS = [
-    "id",
-    "valid_date_start",
-    "valid_date_end",
-    "created",
-    "lat_min",
-    "lat_max",
-    "lon_min",
-    "lon_max",
-    "name",
-    "size",
-    "meshiphi_version",
-    "md5",
-    "json",
-]
-
-
-class EnvironmentMeshSerializer(serializers.ModelSerializer):
+class ModelSerializer(serializers.ModelSerializer):
     class Meta:
-        model = EnvironmentMesh
-        fields = MESH_FIELDS
+        model = Mesh
+        fields = ("id",)
 
-
-class VehicleMeshSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = VehicleMesh
-        fields = ["vehicle"] + MESH_FIELDS[1:]
+    def to_representation(self, instance):
+        return super().to_representation(instance)
 
 
 class LocationSerializer(serializers.ModelSerializer):

@@ -7,6 +7,35 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 
 from polarrouteserver.route_api.management.commands.insert_mesh import Command
+from polarrouteserver.route_api.models import Vehicle
+
+
+class TestLoadVehicleFixturesCommand(TestCase):
+
+    def test_adds_default_vehicles(self):
+        call_command("load_vehicle_fixtures", stdout=StringIO())
+
+        vehicles = Vehicle.objects.in_bulk()
+        assert set(vehicles) == {"SDA", "Slocum", "BoatyMcBoatFace"}
+        assert all(v.created_by == "fixture" for v in vehicles.values())
+
+    def test_existing_vehicles_are_not_changed(self):
+        Vehicle.objects.create(vessel_type="SDA", max_speed=99.0, unit="km/hr", created_by="user")
+
+        call_command("load_vehicle_fixtures", stdout=StringIO())
+
+        sda = Vehicle.objects.get(vessel_type="SDA")
+        assert (sda.max_speed, sda.created_by) == (99.0, "user")
+        assert Vehicle.objects.count() == 3
+
+    def test_can_be_run_again(self):
+        call_command("load_vehicle_fixtures", stdout=StringIO())
+        Vehicle.objects.filter(vessel_type="Slocum").update(max_speed=2.0)
+
+        call_command("load_vehicle_fixtures", stdout=StringIO())
+
+        assert Vehicle.objects.get(vessel_type="Slocum").max_speed == 2.0
+        assert Vehicle.objects.count() == 3
 
 
 class TestInsertMeshCommand(TestCase):

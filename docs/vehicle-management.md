@@ -52,7 +52,8 @@ curl --header "Content-Type: application/json" \
   http://localhost:8000/api/vehicle
 ```
 With `"force_properties"` set to `"true"`, the request will be accepted and the properties for "SDA"
-will be updated.
+will be updated. Vehicle meshes which were built for "SDA" with the old properties are deleted,
+and are built again with the new properties when they are needed.
 
 ## Requesting a list of all available vehicles
 To request a list of all available vehicles in the database, you can make a GET request to the
@@ -99,9 +100,11 @@ curl --header "Content-Type: application/json" \
 
 Removing all vehicles in one go is not currently supported. 
 
+The default vehicles (`SDA`, `Slocum` and `BoatyMcBoatFace`, added when the docker container starts) can't be deleted. Neither can a vehicle which has vehicle meshes ingested for it: delete those meshes first. Vehicle meshes which were built for the vehicle are deleted with it.
+
 ## Adding a vehicle to an environment mesh
 
-Vehicles are added to an `EnvironmentMesh` automatically, creating a `VehicleMesh`, if a route is requested with a vehicle type where a `VehicleMesh` is not already available for those coordinates.
+Vehicles are added to an `EnvironmentMesh` automatically, creating a `VehicleMesh`, when a route is calculated for a vehicle type which doesn't have a `VehicleMesh` for the mesh yet. The vessel type must be one PolarRoute has a performance model for, otherwise the route fails.
 
 ## Creating vehicles with mesh ingestion
 

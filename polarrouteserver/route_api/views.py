@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from celery.result import AsyncResult
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
 from django.utils import timezone
 from drf_spectacular.utils import (
     extend_schema,
@@ -11,18 +12,17 @@ from drf_spectacular.utils import (
 )
 from jsonschema.exceptions import ValidationError
 from meshiphi.mesh_generation.environment_mesh import EnvironmentMesh as EnvMeshLoader
-from rest_framework.generics import GenericAPIView
-from rest_framework.views import APIView
-from rest_framework.reverse import reverse
 from polar_route.config_validation.config_validator import validate_vessel_config
 from rest_framework import serializers, viewsets
+from rest_framework.generics import GenericAPIView
+from rest_framework.reverse import reverse
+from rest_framework.views import APIView
 from taggit.models import TaggedItem
 
 from polarrouteserver._version import __version__ as polarrouteserver_version
 from polarrouteserver.celery import app
 
-from .models import Job, Vehicle, Route, EnvironmentMesh, VehicleMesh, Location
-from .tasks import create_and_calculate_route
+from .models import Job, Location, Mesh, Route, Vehicle, VehicleMesh
 from .responses import (
     ResponseMixin,
     acceptedResponseSchema,
@@ -46,9 +46,10 @@ from .serializers import (
     VehicleSerializer,
     VesselTypeSerializer,
 )
+from .tasks import create_and_calculate_route
 from .utils import (
-    add_vehicle_to_environment_mesh,
     evaluate_route,
+    get_vehicle_mesh,
     route_exists,
     select_mesh,
     select_mesh_for_route_evaluation,
@@ -160,6 +161,10 @@ class VehicleRequestView(LoggingMixin, ResponseMixin, GenericAPIView):
                 vehicle_properties.pop(key, None)
 
             vehicle_queryset.update(**vehicle_properties)
+            # meshes built for the vehicle have the old properties, they are built again when needed
+            VehicleMesh.objects.filter(
+                vehicle_id=vessel_type, environment_mesh__isnull=False
+            ).delete()
             logger.info(f"Updating properties for existing vehicle: {vessel_type}")
 
             response_data = {"vessel_type": vessel_type}
@@ -232,7 +237,8 @@ class VehicleDetailView(LoggingMixin, ResponseMixin, GenericAPIView):
     def delete(self, request, vessel_type):
         """Delete vehicle by vessel_type
 
-        Note: Vehicles with created_by='fixture' are protected from deletion.
+        Note: Vehicles with created_by='fixture' are protected from deletion, as are
+        vehicles with ingested vehicle meshes. Meshes built for the vehicle are deleted with it.
         """
 
         logger.info(
@@ -257,8 +263,19 @@ class VehicleDetailView(LoggingMixin, ResponseMixin, GenericAPIView):
                 f"Vehicle with vessel_type '{vessel_type}' not found."
             )
 
-        # If we reach here, the vehicle exists and is not a fixture vehicle
-        vehicle.delete()
+        # If we reach here, the vehicle exists and is not a fixture vehicle.
+        # Meshes built for the vehicle are rebuilt when needed, but imported ones can't be.
+        if VehicleMesh.objects.filter(
+            vehicle=vehicle, environment_mesh__isnull=True
+        ).exists():
+            return self.bad_request_response(
+                f"Cannot delete vehicle '{vessel_type}' while there are vehicle meshes "
+                "ingested for it. Delete these first."
+            )
+
+        with transaction.atomic():
+            VehicleMesh.objects.filter(vehicle=vehicle).delete()
+            vehicle.delete()
         logger.info(f"Deleted vehicle with vessel_type={vessel_type}")
         return self.no_content_response(
             data={"message": f"Vehicle '{vessel_type}' deleted successfully."}
@@ -383,6 +400,8 @@ class RouteRequestView(LoggingMixin, ResponseMixin, GenericAPIView):
         # Validate required vehicle_type parameter
         if not vehicle_type:
             return self.bad_request_response("Missing required field: vehicle_type")
+        if not isinstance(vehicle_type, str):
+            return self.bad_request_response("vehicle_type must be a string")
 
         # Validate vehicle exists before fetching meshes
         try:
@@ -396,44 +415,22 @@ class RouteRequestView(LoggingMixin, ResponseMixin, GenericAPIView):
         if custom_mesh_id:
             try:
                 logger.info(f"Got custom mesh id {custom_mesh_id} in request.")
-                try:
-                    mesh = VehicleMesh.objects.get(id=custom_mesh_id)
-                except VehicleMesh.DoesNotExist:
-                    mesh = EnvironmentMesh.objects.get(id=custom_mesh_id)
-                meshes = [mesh]
-            except (VehicleMesh.DoesNotExist, EnvironmentMesh.DoesNotExist):
+                meshes = [Mesh.objects.get(id=custom_mesh_id)]
+            except Mesh.DoesNotExist:
                 msg = f"Mesh id {custom_mesh_id} requested. Does not exist."
                 logger.info(msg)
                 return self.not_found_response(msg)
         else:
             meshes = select_mesh(start_lat, start_lon, end_lat, end_lon, vehicle_type)
-            if meshes is None:
-                return self.not_found_response("No mesh available.")
 
-            logger.debug(f"Using meshes: {[mesh.id for mesh in meshes]}")
+        if meshes is None:
+            return self.not_found_response("No mesh available.")
 
-        # Convert EnvironmentMesh to VehicleMesh if needed
-        processed_meshes = []
-        for mesh in meshes:
-            if isinstance(mesh, EnvironmentMesh):
-                logger.info(
-                    f"Using EnvironmentMesh {mesh.id} to create VehicleMesh for vehicle type '{vehicle_type}'"
-                )
-                vehicle_mesh = add_vehicle_to_environment_mesh(mesh, vehicle)
-                processed_meshes.append(vehicle_mesh)
-            else:
-                # Already a VehicleMesh, so just append it
-                processed_meshes.append(mesh)
+        logger.debug(f"Using meshes: {[mesh.id for mesh in meshes]}")
 
-        # Check for existing routes
-        vehicle_meshes = [
-            mesh for mesh in processed_meshes if isinstance(mesh, VehicleMesh)
-        ]
-        existing_route = None
-        if vehicle_meshes:
-            existing_route = route_exists(
-                vehicle_meshes, start_lat, start_lon, end_lat, end_lon
-            )
+        existing_route = route_exists(
+            meshes, start_lat, start_lon, end_lat, end_lon, vehicle
+        )
 
         if existing_route is not None:
             if not force_new_route:
@@ -461,7 +458,7 @@ class RouteRequestView(LoggingMixin, ResponseMixin, GenericAPIView):
 
         # Create and start new route calculation
         logger.debug(
-            f"Using mesh {processed_meshes[0].id} as primary mesh with {[mesh.id for mesh in processed_meshes[1:]]} as backup."
+            f"Using mesh {meshes[0].id} as primary mesh with {[mesh.id for mesh in meshes[1:]]} as backup."
         )
 
         # Create route in database
@@ -470,7 +467,7 @@ class RouteRequestView(LoggingMixin, ResponseMixin, GenericAPIView):
             start_lon=start_lon,
             end_lat=end_lat,
             end_lon=end_lon,
-            mesh=processed_meshes[0],
+            mesh=meshes[0],
             vehicle=vehicle,
             start_name=start_name,
             end_name=end_name,
@@ -497,8 +494,7 @@ class RouteRequestView(LoggingMixin, ResponseMixin, GenericAPIView):
         # Start the task calculation
         task = create_and_calculate_route.delay(
             route.id,
-            vehicle_type,
-            backup_mesh_ids=[mesh.id for mesh in processed_meshes[1:]],
+            backup_mesh_ids=[mesh.id for mesh in meshes[1:]],
         )
 
         # Create database record representing the calculation job
@@ -701,23 +697,18 @@ class MeshView(LoggingMixin, ResponseMixin, APIView):
         data = {"polarrouteserver-version": polarrouteserver_version}
 
         try:
-            # Try VehicleMesh first, then EnvironmentMesh
-            try:
-                mesh = VehicleMesh.objects.get(id=id)
-            except VehicleMesh.DoesNotExist:
-                mesh = EnvironmentMesh.objects.get(id=id)
-
+            mesh = Mesh.objects.get(id=id)
             data.update(
-                dict(
-                    id=mesh.id,
-                    json=mesh.json,
-                    geojson=EnvMeshLoader.load_from_json(mesh.json).to_geojson(),
-                )
+                {
+                    "id": mesh.id,
+                    "json": mesh.json,
+                    "geojson": EnvMeshLoader.load_from_json(mesh.json).to_geojson(),
+                }
             )
 
             return self.success_response(data)
 
-        except (VehicleMesh.DoesNotExist, EnvironmentMesh.DoesNotExist):
+        except Mesh.DoesNotExist:
             return self.not_found_response(f"Mesh with id {id} not found.")
 
 
@@ -759,26 +750,36 @@ class EvaluateRouteView(LoggingMixin, ResponseMixin, APIView):
         if not vehicle_type:
             return self.bad_request_response("Missing required field: vehicle_type")
 
+        if not isinstance(vehicle_type, str):
+            return self.bad_request_response("vehicle_type must be a string")
+
+        try:
+            vehicle = Vehicle.objects.get(vessel_type=vehicle_type)
+        except Vehicle.DoesNotExist:
+            return self.not_found_response(
+                f"Vehicle type '{vehicle_type}' not found in database."
+            )
+
         # Get meshes (either custom or auto-selected)
         if custom_mesh_id:
             try:
-                mesh = VehicleMesh.objects.get(id=custom_mesh_id)
-                meshes = [mesh]
-            except VehicleMesh.DoesNotExist:
+                meshes = [Mesh.objects.get(id=custom_mesh_id)]
+            except Mesh.DoesNotExist:
                 return self.not_found_response("No mesh available.")
         else:
             meshes = select_mesh_for_route_evaluation(route_json, vehicle_type)
-            if meshes is None or len(meshes) == 0:
-                return self.bad_request_response(
-                    f"No suitable VehicleMesh found for route evaluation with vehicle type '{vehicle_type}'."
-                )
 
             if meshes is None:
                 return self.not_found_response("No mesh available.")
 
         response_data = {"polarrouteserver-version": polarrouteserver_version}
 
-        result_dict = evaluate_route(route_json, meshes[0])
+        try:
+            vehicle_mesh = get_vehicle_mesh(meshes[0], vehicle)
+            result_dict = evaluate_route(route_json, vehicle_mesh)
+        except (ValueError, RuntimeError) as e:
+            logger.error(f"Route evaluation failed: {e}")
+            result_dict = None
 
         if result_dict is None:
             result_dict = {"error": "Route evaluation not possible."}

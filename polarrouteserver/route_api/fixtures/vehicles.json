@@ -8,7 +8,7 @@
        "beam": 24.0,
        "hull_type": "slender",
        "force_limit": 96634.5,
-       "max_ice_conc": 80,
+       "max_ice_conc": 100,
        "min_depth": 10,
        "created_by": "fixture"
     }

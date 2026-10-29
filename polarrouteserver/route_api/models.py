@@ -39,7 +39,7 @@ class Mesh(models.Model):
         return abs(self.lat_max - self.lat_min) * abs(self.lon_max - self.lon_min)
 
     class Meta:
-        abstract = True
+        verbose_name_plural = "Meshes"
 
 
 class Vehicle(models.Model):
@@ -69,18 +69,32 @@ class Vehicle(models.Model):
 
 
 class EnvironmentMesh(Mesh):
+    "A mesh of environmental data only, with no vehicle performance."
+
     class Meta:
         verbose_name_plural = "Environment Meshes"
 
 
 class VehicleMesh(Mesh):
+    """A mesh including the performance of one vehicle.
+
+    Either built from an EnvironmentMesh (a cache, deleted with it) or imported
+    already built, in which case environment_mesh is null.
+    """
+
     environment_mesh = models.ForeignKey(
-        EnvironmentMesh, on_delete=models.SET_NULL, null=True
+        EnvironmentMesh, on_delete=models.CASCADE, null=True
     )
-    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, null=True)
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.PROTECT)
 
     class Meta:
         verbose_name_plural = "Vehicle Meshes"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["environment_mesh", "vehicle"],
+                name="unique_vehicle_mesh_per_environment_mesh",
+            )
+        ]
 
 
 class Route(models.Model):
@@ -89,8 +103,15 @@ class Route(models.Model):
     requested = models.DateTimeField(default=timezone.now)
     calculated = models.DateTimeField(null=True)
     info = models.JSONField(null=True)
-    mesh = models.ForeignKey(VehicleMesh, on_delete=models.SET_NULL, null=True)
+    mesh = models.ForeignKey(Mesh, on_delete=models.SET_NULL, null=True)
     vehicle = models.ForeignKey(Vehicle, on_delete=models.SET_NULL, null=True)
+    vehicle_mesh = models.ForeignKey(
+        VehicleMesh,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="routes",
+        help_text="The mesh with the performance of the vehicle which the route was calculated on.",
+    )
     start_lat = models.FloatField()
     start_lon = models.FloatField()
     end_lat = models.FloatField()

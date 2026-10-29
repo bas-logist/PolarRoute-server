@@ -258,7 +258,7 @@ def parse_args():
         "--vehicle",
         type=str,
         nargs="?",
-        help="Vehicle type for route calculation (required). Available types: SDA",
+        help="Vehicle type for route calculation (required). The server lists the available types at /api/vehicle/available, e.g. SDA",
         required=True,
     )
     parser.add_argument(

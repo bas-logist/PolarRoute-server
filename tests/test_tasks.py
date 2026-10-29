@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+from unittest.mock import patch
 import warnings
 
 from celery.exceptions import Ignore
@@ -16,10 +17,15 @@ import yaml
 from polar_route.exceptions import NoRouteFoundError
 
 from polarrouteserver.celery import app
-from polarrouteserver.route_api.models import VehicleMesh, EnvironmentMesh, Route, Vehicle
-from polarrouteserver.route_api.tasks import import_new_meshes, create_and_calculate_route
-from polarrouteserver.route_api.utils import calculate_md5, optimise_route
-from .utils import add_test_vehicle_mesh_to_db, create_test_vehicle, add_test_environment_mesh_to_db
+from polarrouteserver.route_api.models import VehicleMesh, EnvironmentMesh, Job, Mesh, Route, Vehicle
+from polarrouteserver.route_api.tasks import (
+    cleanup_meshes,
+    cleanup_routes,
+    create_and_calculate_route,
+    import_new_meshes,
+)
+from polarrouteserver.route_api.utils import add_vehicle_to_environment_mesh, optimise_route
+from .utils import add_test_vehicle_mesh_to_db, calculate_md5, create_test_vehicle, add_test_environment_mesh_to_db
 
 class TestOptimiseRoute(TestCase):
     def setUp(self):
@@ -78,7 +84,7 @@ class TestOptimiseRoute(TestCase):
         self.mesh.created = datetime.now().replace(tzinfo=timezone.utc) - timedelta(days=1)
         self.mesh.save()
         # Use the task instead of the utility function for this test since the task handles mesh date warnings
-        task = create_and_calculate_route.delay(self.route.id, "TEST_VESSEL")
+        task = create_and_calculate_route.delay(self.route.id)
         task.get()  # Wait for completion
         route = Route.objects.get(id=self.route.id)
         assert "Latest available mesh from" in route.info["info"]
@@ -94,12 +100,12 @@ class TestTaskStatus(TransactionTestCase):
 
     def test_task_status(self):
         """Test that task object status is updated appropriately."""
-        task = create_and_calculate_route.delay(self.route.id, "TEST_VESSEL")
+        task = create_and_calculate_route.delay(self.route.id)
         assert task.state == "SUCCESS"
 
     def test_unsmoothed_route_creation(self):
         """Test that route calculation task created unsmoothed route as well as the main route."""
-        _ = create_and_calculate_route.delay(self.route.id, "TEST_VESSEL")
+        _ = create_and_calculate_route.delay(self.route.id)
 
         route = Route.objects.get(id=self.route.id)
 
@@ -125,7 +131,7 @@ class TestTaskStatus(TransactionTestCase):
         )
 
         with pytest.raises(AssertionError):
-            task = create_and_calculate_route.delay(self.out_of_mesh_route.id, "TEST_VESSEL")
+            task = create_and_calculate_route.delay(self.out_of_mesh_route.id)
             assert task.state == "FAILURE"
 
 class TestImportNewMeshes(TestCase):
@@ -242,6 +248,62 @@ class TestImportNewMeshes(TestCase):
 
         all_meshes2 = EnvironmentMesh.objects.all()
         assert list(all_meshes) == list(all_meshes2)
+
+    def write_metadata(self):
+        with gzip.open(Path(settings.MESH_DIR, self.metadata_filename + ".gz"), "wb") as f:
+            f.write(yaml.dump(self.metadata).encode("utf-8"))
+
+    def test_mesh_with_wrong_md5_is_skipped(self):
+        """A mesh whose md5 differs from the one in the metadata (e.g. a filename clash) is not imported."""
+        self.metadata["records"][0]["md5"] = "0" * 32
+        self.write_metadata()
+
+        meshes_added = import_new_meshes()
+
+        assert [m["name"] for m in meshes_added] == [self.mesh_filenames[1]]
+        assert Mesh.objects.count() == 1
+
+    def test_unreadable_mesh_file_is_skipped(self):
+        """A file which is still transferring doesn't stop the others being imported."""
+        with open(Path(settings.MESH_DIR, self.mesh_filenames[0] + ".gz"), "wb") as f:
+            f.write(b"not a gzip file")
+
+        meshes_added = import_new_meshes()
+
+        assert [m["name"] for m in meshes_added] == [self.mesh_filenames[1]]
+
+    def test_truncated_mesh_file_is_skipped(self):
+        path = Path(settings.MESH_DIR, self.mesh_filenames[0] + ".gz")
+        data = path.read_bytes()
+        path.write_bytes(data[: len(data) // 2])
+
+        meshes_added = import_new_meshes()
+
+        assert [m["name"] for m in meshes_added] == [self.mesh_filenames[1]]
+
+    def test_incomplete_metadata_record_is_skipped(self):
+        del self.metadata["records"][0]["latlong"]
+        self.write_metadata()
+
+        meshes_added = import_new_meshes()
+
+        assert [m["name"] for m in meshes_added] == [self.mesh_filenames[1]]
+
+    def test_json_which_is_not_a_mesh_is_skipped(self):
+        other = "other.json"
+        with gzip.open(Path(settings.MESH_DIR, other + ".gz"), "wb") as f:
+            f.write(json.dumps({"not": "a mesh"}).encode("utf-8"))
+        self.metadata["records"].insert(
+            0, {**self.metadata["records"][0], "filepath": str(Path(settings.MESH_DIR, other))}
+        )
+        self.write_metadata()
+
+        try:
+            meshes_added = import_new_meshes()
+        finally:
+            os.remove(Path(settings.MESH_DIR, other + ".gz"))
+
+        assert sorted(m["name"] for m in meshes_added) == sorted(self.mesh_filenames)
 
     def test_import_vehicle_meshes(self):
         """Test importing VehicleMeshes (meshes with vessel configuration)"""
@@ -385,130 +447,164 @@ class TestImportNewMeshes(TestCase):
 
 @pytest.mark.django_db
 class TestCreateAndCalculateRoute:
-    """Comprehensive tests for the create_and_calculate_route task."""
+    """Tests for the create_and_calculate_route task."""
 
     def setup_method(self):
-        """Set up test fixtures."""
-        # Use existing test utility to create test vehicle
-        self.test_vehicle = create_test_vehicle()
-        
-    def test_task_validates_route_exists(self):
-        """Test that task validates route exists before processing."""
-        try:
-            create_and_calculate_route.delay(99999, "TEST_VESSEL")
-        except Exception as e:
-            # Should fail due to Route.DoesNotExist - that's expected behavior
-            assert "does not exist" in str(e) or "Route" in str(e)
-
-    def test_task_validates_vehicle_type_required(self):
-        """Test that task validates vehicle_type is required."""
-        # Create a route first
-        vehicle = self.test_vehicle
-        route = Route.objects.create(
-            start_lat=67.5,
-            start_lon=-42.5,
-            end_lat=67.7,
-            end_lon=-42.5,
-            vehicle=vehicle,
-            requested=django_timezone.now()
+        self.sda = Vehicle.objects.create(
+            vessel_type="SDA",
+            max_speed=30,
+            unit="km/hr",
+            beam=10,
+            hull_type="slender",
+            force_limit=100000,
+            max_ice_conc=80,
+            min_depth=10,
         )
-        
-        # Test that calling task without vehicle_type validates properly
-        try:
-            create_and_calculate_route.delay(route.id)  # No vehicle_type provided
-        except Exception as e:
-            # Should fail due to missing vehicle_type - that's expected
-            assert "vehicle_type is required" in str(e)
+        self.env_mesh = add_test_environment_mesh_to_db()
+
+    def make_route(self, **kwargs):
+        defaults = dict(
+            start_lat=1.1, start_lon=1.1, end_lat=8.9, end_lon=8.9,
+            mesh=self.env_mesh, vehicle=self.sda,
+        )
+        return Route.objects.create(**(defaults | kwargs))
+
+    def test_vehicle_mesh_is_built_from_environment_mesh(self):
+        route = self.make_route()
+        assert not VehicleMesh.objects.exists()
+
+        create_and_calculate_route.delay(route.id)
+
+        route.refresh_from_db()
+        assert route.calculated is not None
+        assert route.json is not None
+        assert route.mesh_id == self.env_mesh.id
+        vehicle_mesh = VehicleMesh.objects.get()
+        assert vehicle_mesh.environment_mesh_id == self.env_mesh.id
+        assert vehicle_mesh.vehicle_id == "SDA"
+
+    def test_vehicle_mesh_used_is_recorded_on_the_route(self):
+        route = self.make_route()
+
+        create_and_calculate_route.delay(route.id)
+
+        route.refresh_from_db()
+        assert route.vehicle_mesh_id == VehicleMesh.objects.get().id
+        assert route.mesh_id == self.env_mesh.id
+
+    def test_missing_ice_data_is_warned_about_on_the_route(self):
+        route = self.make_route()
+
+        create_and_calculate_route.delay(route.id)
+
+        route.refresh_from_db()
+        assert "have no sea ice concentration data" in route.info["info"]
+
+    def test_existing_vehicle_mesh_is_reused(self):
+        first = self.make_route()
+        second = self.make_route()
+
+        create_and_calculate_route.delay(first.id)
+        create_and_calculate_route.delay(second.id)
+
+        assert VehicleMesh.objects.count() == 1
+
+    def test_battery_vehicle_is_optimised_for_battery_use(self):
+        boaty = Vehicle.objects.create(
+            vessel_type="BoatyMcBoatFace", max_speed=3.6, unit="km/hr",
+            max_ice_conc=10, min_depth=10,
+        )
+        route = self.make_route(vehicle=boaty)
+
+        create_and_calculate_route.delay(route.id)
+
+        route.refresh_from_db()
+        assert route.json is not None, route.info
+        objectives = [r[0]["features"][0]["properties"]["objective_function"] for r in route.json]
+        assert objectives == ["traveltime", "battery"]
+
+    def test_vehicle_mesh_for_other_vehicle_is_used_through_its_environment_mesh(self):
+        sda_mesh = add_vehicle_to_environment_mesh(self.env_mesh, self.sda)
+        boaty = Vehicle.objects.create(
+            vessel_type="BoatyMcBoatFace", max_speed=3.6, unit="km/hr",
+            max_ice_conc=10, min_depth=10,
+        )
+        route = self.make_route(mesh=sda_mesh, vehicle=boaty)
+
+        create_and_calculate_route.delay(route.id)
+
+        route.refresh_from_db()
+        assert route.json is not None, route.info
+        assert VehicleMesh.objects.filter(
+            environment_mesh=self.env_mesh, vehicle=boaty
+        ).exists()
+
+    def test_unknown_vessel_type_is_an_error_on_the_route(self):
+        unknown = Vehicle.objects.create(
+            vessel_type="NOT_A_KNOWN_VESSEL", max_speed=10.0, unit="km/hr"
+        )
+        route = self.make_route(vehicle=unknown)
+
+        create_and_calculate_route.delay(route.id)
+
+        route.refresh_from_db()
+        assert "not in known list of vessels" in route.info["error"]
+        assert route.json is None
+
+    def test_route_without_mesh_is_an_error_on_the_route(self):
+        route = self.make_route(mesh=None)
+
+        create_and_calculate_route.delay(route.id)
+
+        route.refresh_from_db()
+        assert "error" in route.info
+        assert route.json is None
+
+    def test_route_without_vehicle_is_an_error_on_the_route(self):
+        route = self.make_route(vehicle=None)
+
+        create_and_calculate_route.delay(route.id)
+
+        route.refresh_from_db()
+        assert "error" in route.info
+        assert route.json is None
+
+    def test_inaccessible_route_is_retried_on_backup_mesh(self):
+        backup_mesh = add_test_environment_mesh_to_db()
+        route = self.make_route()
+
+        with patch(
+            "polarrouteserver.route_api.tasks.optimise_route",
+            side_effect=[ValueError("Inaccessible. No routes found."), []],
+        ) as mock_optimise:
+            create_and_calculate_route.delay(route.id, backup_mesh_ids=[backup_mesh.id])
+
+        assert mock_optimise.call_count == 2
+        route.refresh_from_db()
+        assert route.mesh_id == backup_mesh.id
+        assert Job.objects.filter(route=route).count() == 1
+
+    def test_inaccessible_route_without_backup_mesh_is_an_error(self):
+        route = self.make_route()
+
+        with patch(
+            "polarrouteserver.route_api.tasks.optimise_route",
+            side_effect=ValueError("Inaccessible. No routes found."),
+        ):
+            create_and_calculate_route.delay(route.id)
+
+        route.refresh_from_db()
+        assert "Inaccessible" in route.info["error"]
+        assert not Job.objects.filter(route=route).exists()
 
 
 @pytest.mark.django_db
 class TestVehicleMeshCreationWorkflow:
-    """Test VehicleMesh creation workflow in create_and_calculate_route task."""
+    """Test which mesh create_and_calculate_route uses for imported vehicle meshes."""
 
     def setup_method(self):
-        """Set up test fixtures."""
-        self.vehicle_sda = Vehicle.objects.create(
-            vessel_type="SDA",
-            max_speed=26.5,
-            unit="km/hr",
-            beam=24.0,
-            hull_type="slender",
-            force_limit=96634.5
-        )
-        
         self.vehicle_test = create_test_vehicle()
         self.env_mesh = add_test_environment_mesh_to_db()
-
-    def test_route_with_no_mesh_raises_error(self):
-        """Test that route with no mesh raises appropriate error."""
-        # Create route with no mesh
-        route = Route.objects.create(
-            start_lat=1.1,
-            start_lon=1.1, 
-            end_lat=8.9,
-            end_lon=8.9,
-            mesh=None,  # No mesh assigned
-            vehicle=self.vehicle_test,
-            requested=django_timezone.now()
-        )
-        
-        # Verify route starts with no mesh
-        assert route.mesh is None
-        
-        # Run task - should raise error about unexpected mesh type
-        with pytest.raises(ValueError, match="Unexpected mesh type"):
-            result = create_and_calculate_route.delay(route.id, "TEST_VESSEL")
-            result.get(timeout=10)
-
-    def test_route_with_wrong_vehicle_mesh_creates_correct_one(self):
-        """Test that route with VehicleMesh for wrong vehicle creates correct VehicleMesh."""
-        # Create VehicleMesh for SDA vehicle
-        sda_vehicle_mesh = VehicleMesh.objects.create(
-            environment_mesh=self.env_mesh,
-            vehicle=self.vehicle_sda,
-            valid_date_start=self.env_mesh.valid_date_start,
-            valid_date_end=self.env_mesh.valid_date_end,
-            created=self.env_mesh.created,
-            md5=self.env_mesh.md5 + "_sda",
-            meshiphi_version=self.env_mesh.meshiphi_version,
-            lat_min=self.env_mesh.lat_min,
-            lat_max=self.env_mesh.lat_max,
-            lon_min=self.env_mesh.lon_min,
-            lon_max=self.env_mesh.lon_max,
-            name=f"{self.env_mesh.name} SDA",
-            json=self.env_mesh.json
-        )
-        
-        # Create route with SDA VehicleMesh but request TEST_VESSEL
-        route = Route.objects.create(
-            start_lat=-40.0,
-            start_lon=-40.0,
-            end_lat=40.0, 
-            end_lon=40.0,
-            mesh=sda_vehicle_mesh,  # Wrong vehicle mesh
-            vehicle=self.vehicle_test,
-            requested=django_timezone.now()
-        )
-        
-        # Verify route starts with SDA VehicleMesh
-        assert isinstance(route.mesh, VehicleMesh)
-        assert route.mesh.vehicle.vessel_type == "SDA"
-        
-        # Run task requesting TEST_VESSEL - should create new VehicleMesh
-        result = create_and_calculate_route.delay(route.id, "TEST_VESSEL")
-        _ = result.get(timeout=30)
-        
-        # Verify route was calculated
-        route.refresh_from_db()
-        assert route.calculated is not None
-        assert route.json is not None
-        
-        # Verify route now has correct VehicleMesh
-        assert isinstance(route.mesh, VehicleMesh)
-        assert route.mesh.vehicle.vessel_type == "TEST_VESSEL"
-        assert route.mesh.environment_mesh == self.env_mesh
-        # Should be different mesh than the SDA one
-        assert route.mesh.id != sda_vehicle_mesh.id
 
     def test_route_with_matching_vehicle_mesh_uses_existing(self):
         """Test that route with correct VehicleMesh uses existing mesh without creating new one."""
@@ -529,7 +625,7 @@ class TestVehicleMeshCreationWorkflow:
         )
         
         # Run task - should use existing mesh
-        result = create_and_calculate_route.delay(route.id, "TEST_VESSEL")
+        result = create_and_calculate_route.delay(route.id)
         _ = result.get(timeout=30)
         
         # Verify route was calculated
@@ -552,23 +648,7 @@ class TestTaskErrorHandling:
     def test_create_route_with_invalid_route_id(self):
         """Test task behavior with invalid route ID."""
         with pytest.raises(Route.DoesNotExist):
-            result = create_and_calculate_route.delay(99999, "TEST_VESSEL")
-            result.get(timeout=10)
-
-    def test_create_route_with_invalid_vehicle_type(self):
-        """Test task behavior with invalid vehicle type."""
-        vehicle = create_test_vehicle()
-        route = Route.objects.create(
-            start_lat=67.5,
-            start_lon=-42.5,
-            end_lat=67.7,
-            end_lon=-42.5,
-            vehicle=vehicle,
-            requested=django_timezone.now()
-        )
-        
-        with pytest.raises(ValueError, match="not found in database"):
-            result = create_and_calculate_route.delay(route.id, "INVALID_VEHICLE")
+            result = create_and_calculate_route.delay(99999)
             result.get(timeout=10)
 
     def test_import_meshes_no_metadata_file(self):
@@ -578,3 +658,132 @@ class TestTaskErrorHandling:
         
         # Should return None when no metadata file exists
         assert meshes_added is None
+
+
+class TestRouteCleanup(TestCase):
+
+    def tearDown(self):
+        # return these settings to default after tests are run to avoid settings leakage between tests
+        settings.CLEANUP_ROUTES = False
+        settings.CLEANUP_MESHES = False
+
+    def test_settings_catch(self):
+        "Test that with default settings, CLEANUP_ROUTES=False, that on calling the task, deletion is prevented"
+        with pytest.raises(Exception):
+            cleanup_routes()
+
+    def test_cleanup_routes(self):
+        self.mesh = add_test_environment_mesh_to_db()
+        self.new_route = Route.objects.create(
+            start_lat=1.1, start_lon=1.1, end_lat=8.9, end_lon=8.9, mesh=self.mesh
+        )
+        self.new_route.calculated = datetime.now().replace(tzinfo=timezone.utc)
+        self.new_route.save()
+
+        self.old_route = Route.objects.create(
+            start_lat=1.1, start_lon=1.1, end_lat=8.9, end_lon=8.9, mesh=self.mesh
+        )
+        self.old_route.calculated = datetime.now().replace(tzinfo=timezone.utc) - timedelta(days=7)
+        self.old_route.save()
+
+        # start by checking number of routes in db
+        assert len(Route.objects.all()) == 2
+
+        # enable routes cleanup, but with threshold age higher than all the available routes
+        settings.CLEANUP_ROUTES = True
+        settings.CLEANUP_ROUTES_DAYS = 20
+        cleanup_routes()
+        assert len(Route.objects.all()) == 2
+
+        # set the threshold between our two routes, run cleanup and check that only one is left
+        settings.CLEANUP_ROUTES_DAYS = 5
+        cleanup_routes()
+        assert len(Route.objects.all()) == 1
+
+        # add another route to the db and protect it
+        self.old_route = Route.objects.create(
+            start_lat=1.1, start_lon=1.1, end_lat=8.9, end_lon=8.9, mesh=self.mesh, protect=True
+        )
+        self.old_route.calculated = datetime.now().replace(tzinfo=timezone.utc) - timedelta(days=7)
+        self.old_route.save()
+        assert len(Route.objects.all()) == 2
+        cleanup_routes()
+        assert len(Route.objects.all()) == 2
+
+
+class TestMeshCleanup(TestCase):
+
+    def tearDown(self):
+        # return these settings to default after tests are run to avoid settings leakage between tests
+        settings.CLEANUP_ROUTES = False
+        settings.CLEANUP_MESHES = False
+
+    def test_settings_catch(self):
+        "Test that with default settings, CLEANUP_MESHES=False, that on calling the task, deletion is prevented"
+        with pytest.raises(Exception):
+            cleanup_meshes()
+
+    def test_cleanup_meshes(self):
+        self.new_mesh = add_test_environment_mesh_to_db()
+        self.old_mesh = add_test_environment_mesh_to_db()
+        self.old_mesh.created = datetime.now().replace(tzinfo=timezone.utc) - timedelta(days=7)
+        self.old_mesh.save()
+
+        # start by checking number of meshes in db
+        assert len(Mesh.objects.all()) == 2
+
+        # enable mesh cleanup, but with threshold age higher than all the available meshes
+        settings.CLEANUP_MESHES = True
+        settings.CLEANUP_MESHES_DAYS = 20
+        cleanup_meshes()
+        assert len(Mesh.objects.all()) == 2
+
+        # set the threshold between our two meshes, run cleanup and check that only one is left
+        settings.CLEANUP_MESHES_DAYS = 5
+        cleanup_meshes()
+        assert len(Mesh.objects.all()) == 1
+
+        # add another mesh to the db and protect it
+        self.old_mesh = add_test_environment_mesh_to_db()
+        self.old_mesh.created = datetime.now().replace(tzinfo=timezone.utc) - timedelta(days=7)
+        self.old_mesh.protect = True
+        self.old_mesh.save()
+        assert len(Mesh.objects.all()) == 2
+        cleanup_meshes()
+        assert len(Mesh.objects.all()) == 2
+
+    def test_protected_vehicle_mesh_protects_its_environment_mesh(self):
+        old = datetime.now().replace(tzinfo=timezone.utc) - timedelta(days=7)
+        vehicle_mesh = add_test_vehicle_mesh_to_db()
+        environment_mesh = vehicle_mesh.environment_mesh
+        EnvironmentMesh.objects.filter(id=environment_mesh.id).update(created=old)
+        VehicleMesh.objects.filter(id=vehicle_mesh.id).update(created=old, protect=True)
+
+        settings.CLEANUP_MESHES = True
+        settings.CLEANUP_MESHES_DAYS = 5
+        cleanup_meshes()
+
+        assert EnvironmentMesh.objects.filter(id=environment_mesh.id).exists()
+        assert VehicleMesh.objects.filter(id=vehicle_mesh.id).exists()
+
+        VehicleMesh.objects.filter(id=vehicle_mesh.id).update(protect=False)
+        cleanup_meshes()
+
+        assert not Mesh.objects.exists()
+
+    def test_cleanup_removes_environment_and_vehicle_meshes(self):
+        old_vehicle_mesh = add_test_vehicle_mesh_to_db()
+        old_env_mesh = old_vehicle_mesh.environment_mesh
+        old_env_mesh.created = datetime.now().replace(tzinfo=timezone.utc) - timedelta(days=7)
+        old_env_mesh.save()
+        old_vehicle_mesh.created = old_env_mesh.created
+        old_vehicle_mesh.save()
+        assert Mesh.objects.count() == 2
+
+        settings.CLEANUP_MESHES = True
+        settings.CLEANUP_MESHES_DAYS = 5
+        cleanup_meshes()
+
+        assert Mesh.objects.count() == 0
+        assert not EnvironmentMesh.objects.exists()
+        assert not VehicleMesh.objects.exists()
