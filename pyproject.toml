@@ -24,7 +24,7 @@ dependencies = [
     "django-taggit",
     "drf-spectacular[sidecar]",
     "haversine",
-    "polar-route @ git+https://github.com/bas-logist/PolarRoute.git@main",
+    "polar-route >=1.2.0",
     "psycopg>=3",
     "pyyaml",
     "SQLAlchemy",
