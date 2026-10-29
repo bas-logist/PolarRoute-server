@@ -256,7 +256,7 @@ def _get_latest_metadata(dir_path: str | Path) -> dict:
     # load in the metadata
     logger.info(f"Loading metadata file from {latest_metadata_file}")
     with open_gzipped_file(latest_metadata_file, "rb") as f:
-        metadata = yaml.load(f.read(), Loader=yaml.Loader)
+        metadata = yaml.safe_load(f.read())
 
     return metadata
 
