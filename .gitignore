@@ -2,6 +2,8 @@
 polarrouteserver/_version.py
 database/*
 
+s3_data/
+
 # Django #
 *.log
 *.pot
