@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Disabled celery features which are deprecated by rabbitmq >= 4.3.
+
+## 0.3.0 - 2026-10-26
+
+### Upgraded
+- Django 5.2 to Django 6.1
+
+### Removed
+- Support for Python < 3.12
+
 ### Added
 - `/health/` endpoint and `HEALTHCHECK` in the Docker container.
 - Docker production and development settings modules.
@@ -18,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Re-worked docker container to create a production build-stage.
 - Added static file collection to the docker entrypoint script.
 - A number of syntax changes throughout to comply with default rules enabled in ruff >0.16.
+- Changed calls to `datetime.timezone.utc` to `datetime.UTC`.
  
 ## 0.2.7 - 2025-12-22
 

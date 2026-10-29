@@ -2,10 +2,10 @@
 Django settings for polarrouteserver project.
 
 For more information on this file, see
-https://docs.djangoproject.com/en/5.0/topics/settings/
+https://docs.djangoproject.com/en/6.1/topics/settings/
 
 For the full list of settings and their values, see
-https://docs.djangoproject.com/en/5.0/ref/settings/
+https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import logging
@@ -176,7 +176,7 @@ DATABASES = {
     }
 }
 
-# https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
+# https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -193,25 +193,29 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.0/topics/i18n/
+# https://docs.djangoproject.com/en/6.1/topics/i18n/
 LANGUAGE_CODE = "en-gb"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.0/howto/static-files/
+# https://docs.djangoproject.com/en/6.1/howto/static-files/
 STATIC_URL = "static/"
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Celery settings
 CELERY_WORKER_HIJACK_ROOT_LOGGER = True
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "amqp://guest:guest@localhost")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "django-db")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+#  stop Celery from creating problematic transient queues by explicitly disabling worker gossip and remote control
+CELERY_WORKER_SEND_TASK_EVENTS = False
+CELERY_WORKER_ENABLE_REMOTE_CONTROL = False
+
+# forces Celery's remote control (pidbox) and event monitoring systems to declare their queues as durable, preventing them from falling into the forbidden transient/non-exclusive category
+CELERY_CONTROL_QUEUE_DURABLE = True
+CELERY_EVENT_QUEUE_DURABLE = True
 
 # django-health-check settings
 HEALTH_CHECKS = [

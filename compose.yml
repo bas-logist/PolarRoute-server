@@ -57,7 +57,7 @@ services:
       - rabbitmq
 
   rabbitmq:
-    image: rabbitmq
+    image: rabbitmq:4.4
     ports:
       - 5672:5672
       - 15672:15672

@@ -65,18 +65,21 @@ class RouteAdmin(admin.ModelAdmin):
 
         return self.fieldsets
 
+    @admin.display(description="Start (lat,lon)")
     def display_start(self, obj):
         if obj.start_name:
             return f"{obj.start_name} ({obj.start_lat},{obj.start_lon})"
         else:
             return f"({obj.start_lat},{obj.start_lon})"
 
+    @admin.display(description="End (lat,lon)")
     def display_end(self, obj):
         if obj.end_name:
             return f"{obj.end_name} ({obj.end_lat},{obj.end_lon})"
         else:
             return f"({obj.end_lat},{obj.end_lon})"
 
+    @admin.display(description="Tags")
     def display_tags(self, obj):
         """Display tags as a comma-separated string."""
         tags = obj.tags.all()
@@ -84,14 +87,10 @@ class RouteAdmin(admin.ModelAdmin):
             return ", ".join([tag.name for tag in tags])
         return "-"
 
+    @admin.display(description="Job ID (latest)")
     def job_id(self, obj):
         job = obj.job_set.latest("datetime")
         return f"{job.id}"
-
-    display_start.short_description = "Start (lat,lon)"
-    display_end.short_description = "End (lat,lon)"
-    display_tags.short_description = "Tags"
-    job_id.short_description = "Job ID (latest)"
 
     def get_readonly_fields(self, request, obj=None):
         editable_fields = ("requested", "calculated", "start_name", "end_name", "tags")
@@ -114,14 +113,13 @@ class JobAdmin(admin.ModelAdmin):
     )
     ordering = ("-datetime",)
 
+    @admin.display(description="Status")
     def get_status(self, obj):
         """Get current job status from Celery."""
         try:
             return obj.status if obj.status is not None else "UNKNOWN"
         except (DatabaseError, ObjectDoesNotExist, AttributeError) as e:
             return f"Error: {type(e).__name__}"
-
-    get_status.short_description = "Status"
 
 
 @admin.register(Mesh)

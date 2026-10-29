@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
             name="valid_date_end",
             field=models.DateField(
                 default=datetime.datetime(
-                    2024, 11, 11, 14, 42, 0, 979220, tzinfo=datetime.timezone.utc
+                    2024, 11, 11, 14, 42, 0, 979220, tzinfo=datetime.UTC
                 )
             ),
             preserve_default=False,
@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
             name="valid_date_start",
             field=models.DateField(
                 default=datetime.datetime(
-                    2024, 11, 11, 14, 42, 10, 957228, tzinfo=datetime.timezone.utc
+                    2024, 11, 11, 14, 42, 10, 957228, tzinfo=datetime.UTC
                 )
             ),
             preserve_default=False,

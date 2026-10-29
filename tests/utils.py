@@ -14,7 +14,7 @@ def add_test_mesh_to_db():
     return Mesh.objects.create(
             valid_date_start = timezone.now().date() - datetime.timedelta(days=3),
             valid_date_end = timezone.now().date(),
-            created = datetime.datetime.now(datetime.timezone.utc),
+            created = datetime.datetime.now(datetime.UTC),
             md5 = md5,
             meshiphi_version = "test",
             lat_min = mesh["config"]["mesh_info"]["region"]["lat_min"],

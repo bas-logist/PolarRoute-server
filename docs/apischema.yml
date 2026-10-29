@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: PolarRoute-Server
-  version: 0.2.8.dev79+gd9fb9594b.d20260714
+  version: 0.3.0
   description: Backend server for serving PolarRoute and MeshiPhi assets
 paths:
   /api/evaluate_route:
@@ -308,6 +308,7 @@ paths:
           - hi
           - hr
           - hsb
+          - ht
           - hu
           - hy
           - ia

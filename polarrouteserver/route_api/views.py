@@ -74,7 +74,7 @@ class LoggingMixin:
                     "endpoint": request.path,
                     "user": request.user.username,
                     "ip_address": request.META.get("REMOTE_ADDR"),
-                    "user_agent": request.META.get("HTTP_USER_AGENT"),
+                    "user_agent": request.headers.get("user-agent"),
                 }
             )
         except Exception:
@@ -90,7 +90,7 @@ class LoggingMixin:
                     "status_code": response.status_code,
                     "user": request.user.username,
                     "ip_address": request.META.get("REMOTE_ADDR"),
-                    "user_agent": request.META.get("HTTP_USER_AGENT"),
+                    "user_agent": request.headers.get("user-agent"),
                 }
             )
         except Exception:

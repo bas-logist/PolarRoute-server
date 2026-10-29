@@ -156,7 +156,7 @@ build: ## Build package
 	@python -m build
 
 .PHONY:prep-release
-prep-release: ## runs update-pkg-version, (re)builds the apischema, preps the changelog
+prep-release: ## (re)builds the apischema, preps the changelog (usage: make prep-release version=1.2.3)
 	@echo "+ $@"
 	@if [ -z "$(version)" ]; then \
 		echo "ERROR: version is not set."; \
