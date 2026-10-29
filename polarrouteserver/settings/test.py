@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from celery.schedules import crontab
+
 from .base import *
 
 TEST_MESH_PATH = Path("tests", "fixtures", "test_vessel_mesh.json")
@@ -19,5 +21,13 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+    }
+}
+
+
+CELERY_BEAT_SCHEDULE = {
+    "my_test_task": {
+        "task": "polarrouteserver.route_api.tasks.my_test_task",
+        "schedule": crontab(minute="*/1"),
     }
 }
