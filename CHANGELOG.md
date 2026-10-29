@@ -8,8 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- The `polar-route` dependency is now the released version `>=1.2.0`. This is the first release in which `route_calc` accepts a route geojson.
-- Replaced the GDAL system packages in the Docker image; `polar-route` 1.2.0 no longer depends on Fiona, and the Python geospatial wheels bundle GDAL.
+- The `polar-route` dependency is now `>=1.2.0` (previously `==1.0.0`). This is the first release in which `route_calc` accepts a route geojson.
+- Updated `evaluate_route` to pass the route geojson directly to `route_calc`, removing the manual DataFrame construction and temporary file handling.
+- Replaced the GDAL system packages in the Docker image with `libexpat1` (needed by `rasterio`); `polar-route` 1.2.0 no longer depends on Fiona, and the Python geospatial wheels bundle GDAL.
 
 ### Fixed
 - Disabled celery features which are deprecated by rabbitmq >= 4.3.
@@ -24,13 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for Python < 3.12
 
 ### Added
-- `/health/` endpoint and `HEALTHCHECK` in the Docker container.
+- `/health/` endpoint and `HEALTHCHECK` in the Docker container. 
 - Docker production and development settings modules.
 - `compose.prod.yml` for modifying the compose config for production.
 
 ### Changed
-- Updated `evaluate_route` to pass the route geojson directly to `route_calc`, removing the manual DataFrame construction and temporary file handling. Requires a version of `polar-route` in which `route_calc` accepts a route geojson (currently unreleased).
-- Pointed the `polar-route` dependency at `git+https://github.com/bas-logist/PolarRoute.git@main` until a release including the geojson-accepting `route_calc` is available.
 - Re-worked docker container to create a production build-stage.
 - Added static file collection to the docker entrypoint script.
 - A number of syntax changes throughout to comply with default rules enabled in ruff >0.16.
