@@ -10,7 +10,7 @@ TEST_ROUTE_OOM_PATH = Path("tests", "fixtures", "test_route_out_of_mesh.json")
 TEST_VEHICLE_PATH = Path("tests", "fixtures", "test_vessel_config.json")
 MESH_DIR = "tests/fixtures"
 MESH_METADATA_DIR = MESH_DIR
-MESH_METADATA_GLOB_PATTERN = "upload_metadata_*.yaml.gz`"
+MESH_METADATA_GLOB_PATTERN = "upload_metadata_*.yaml.gz"
 
 S3_ENDPOINT_URL = "http://localhost:5000"
 S3_KEY = "testing"
