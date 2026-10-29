@@ -538,6 +538,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#reverted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reverted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -578,7 +600,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
+  <a href="#added_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -617,7 +639,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_1" class="md-nav__link">
+  <a href="#added_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -684,7 +706,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_2" class="md-nav__link">
+  <a href="#added_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -773,7 +795,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_3" class="md-nav__link">
+  <a href="#added_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -851,7 +873,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_4" class="md-nav__link">
+  <a href="#added_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -901,7 +923,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_5" class="md-nav__link">
+  <a href="#added_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -3577,6 +3599,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#reverted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reverted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3617,7 +3661,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
+  <a href="#added_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -3656,7 +3700,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_1" class="md-nav__link">
+  <a href="#added_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -3723,7 +3767,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_2" class="md-nav__link">
+  <a href="#added_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -3812,7 +3856,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_3" class="md-nav__link">
+  <a href="#added_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -3890,7 +3934,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_4" class="md-nav__link">
+  <a href="#added_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -3940,7 +3984,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_5" class="md-nav__link">
+  <a href="#added_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -4117,6 +4161,15 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Disabled celery features which are deprecated by rabbitmq &gt;= 4.3.</li>
 <li><code>evaluate_route</code> now passes <code>route_type="smoothed"</code> to <code>route_calc</code>, which <code>polar-route</code> 1.2.0 requires to be set.</li>
 </ul>
+<h3 id="reverted">Reverted<a class="headerlink" href="#reverted" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Downgraded Django back to 5.2 to account for lack of Django 6.1 support in django-celery-beat.</li>
+</ul>
+<h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Celery beat service to docker compose configs.</li>
+<li>Testing for celery beat.</li>
+</ul>
 <h2 id="030-2026-10-26">0.3.0 - 2026-10-26<a class="headerlink" href="#030-2026-10-26" title="Permanent link">&para;</a></h2>
 <h3 id="upgraded">Upgraded<a class="headerlink" href="#upgraded" title="Permanent link">&para;</a></h3>
 <ul>
@@ -4126,7 +4179,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <ul>
 <li>Support for Python &lt; 3.12</li>
 </ul>
-<h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
+<h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>/health/</code> endpoint and <code>HEALTHCHECK</code> in the Docker container. </li>
 <li>Docker production and development settings modules.</li>
@@ -4140,7 +4193,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Changed calls to <code>datetime.timezone.utc</code> to <code>datetime.UTC</code>.</li>
 </ul>
 <h2 id="027-2025-12-22">0.2.7 - 2025-12-22<a class="headerlink" href="#027-2025-12-22" title="Permanent link">&para;</a></h2>
-<h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
+<h3 id="added_2">Added<a class="headerlink" href="#added_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Added all ports on localhost, 127.0.0.1 and 0.0.0.0 to CORS allowed origins.</li>
 </ul>
@@ -4155,7 +4208,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Added missing migration.</li>
 </ul>
 <h2 id="025-2025-12-15">0.2.5 - 2025-12-15<a class="headerlink" href="#025-2025-12-15" title="Permanent link">&para;</a></h2>
-<h3 id="added_2">Added<a class="headerlink" href="#added_2" title="Permanent link">&para;</a></h3>
+<h3 id="added_3">Added<a class="headerlink" href="#added_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li>added ensure_adminuser command to add subtly more sophisticated behaviour to Django's createsuperuser - i.e. don't raise non-zero exit code if superuser already exists, add more useful output.</li>
 <li>Empty arrays to empty responses for a consistent response structure.</li>
@@ -4194,7 +4247,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Inclusion of fixtures in source code distribution by using <code>MANIFEST.in</code> in place of <code>package_data</code> in <code>pyproject.toml</code>.</li>
 </ul>
 <h2 id="023-2025-11-10">0.2.3 - 2025-11-10<a class="headerlink" href="#023-2025-11-10" title="Permanent link">&para;</a></h2>
-<h3 id="added_3">Added<a class="headerlink" href="#added_3" title="Permanent link">&para;</a></h3>
+<h3 id="added_4">Added<a class="headerlink" href="#added_4" title="Permanent link">&para;</a></h3>
 <ul>
 <li>This changelog!</li>
 </ul>
@@ -4218,7 +4271,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Support for Django &lt; 5.2</li>
 </ul>
 <h2 id="022-2025-10-14">0.2.2 - 2025-10-14<a class="headerlink" href="#022-2025-10-14" title="Permanent link">&para;</a></h2>
-<h3 id="added_4">Added<a class="headerlink" href="#added_4" title="Permanent link">&para;</a></h3>
+<h3 id="added_5">Added<a class="headerlink" href="#added_5" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Optimisation metrics exposure (time, fuel, distance) in route responses.</li>
 <li>Job ID inclusion in <code>recent_routes</code> response for better tracking.</li>
@@ -4237,7 +4290,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Performance issues with <code>recent_routes</code> endpoint loading unnecessary data.</li>
 </ul>
 <h2 id="021-2025-09-18">0.2.1 - 2025-09-18<a class="headerlink" href="#021-2025-09-18" title="Permanent link">&para;</a></h2>
-<h3 id="added_5">Added<a class="headerlink" href="#added_5" title="Permanent link">&para;</a></h3>
+<h3 id="added_6">Added<a class="headerlink" href="#added_6" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Response refactor for improved error code consistency.</li>
 <li>New <code>responses.py</code> module for centralized response handling.</li>
