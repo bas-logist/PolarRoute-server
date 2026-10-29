@@ -6,6 +6,7 @@ Environment variables used directly by the Django site are prefixed with `POLARR
 
 ## Mesh settings
 
+- `POLARROUTE_MESH_METADATA_GLOB_PATTERN` - custom naming glob pattern for the metadata file produced by PolarRoute-pipeline, defaults to `"upload_metadata_*.yaml.gz"`.
 - `POLARROUTE_MESH_DIR` - absolute path to directory where mesh files will be made available (this location is periodically checked in production and new files ingested into the database based on the metadata file). A warning is logged in production if this is not set.
 - `POLARROUTE_MESH_METADATA_DIR` - as above, absolute path to directory where mesh metadata files will be made available. If this is not set, the value of `POLARROUTE_MESH_DIR` is used and a warning to this effect is logged.
 

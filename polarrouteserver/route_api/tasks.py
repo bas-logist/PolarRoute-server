@@ -1,5 +1,6 @@
 import copy
 import datetime
+import glob
 import gzip
 import json
 import os
@@ -267,15 +268,15 @@ def _get_latest_metadata_file(dir_path: str | Path) -> Path:
     if dir_path.startswith("s3://"):
         fs = _get_s3_filesystem()
 
-        pattern = "upload_metadata*.yaml.gz"
-
         # Combine directory path and pattern into an S3 glob expression
-        search_path = os.path.join(dir_path, pattern)
+        search_path = os.path.join(dir_path, settings.MESH_METADATA_GLOB_PATTERN)
 
         # Find all matching object paths in S3
         matching_files = fs.glob(search_path)
         if not matching_files:
-            raise FileNotFoundError(f"No files matching '{pattern}' in {dir_path}")
+            raise FileNotFoundError(
+                f"No files matching '{settings.MESH_METADATA_GLOB_PATTERN}' in {dir_path}"
+            )
 
         # Sort files by S3's 'LastModified' metadata attribute
         # fs.info(f) returns metadata including 'LastModified' timestamp
@@ -289,12 +290,11 @@ def _get_latest_metadata_file(dir_path: str | Path) -> Path:
         )
 
     else:
-        files = os.listdir(settings.MESH_METADATA_DIR)
-        file_list = [
-            os.path.join(settings.MESH_METADATA_DIR, file)
-            for file in files
-            if file.startswith("upload_metadata") and file.endswith(".yaml.gz")
-        ]
+        file_list = glob.glob(
+            os.path.join(
+                settings.MESH_METADATA_DIR, settings.MESH_METADATA_GLOB_PATTERN
+            )
+        )
         if len(file_list) == 0:
             msg = "Upload metadata file not found."
             logger.error(msg)
