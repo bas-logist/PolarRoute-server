@@ -304,6 +304,9 @@ def _get_latest_metadata_file(dir_path: str | Path) -> Path:
 
 
 def _get_s3_filesystem():
+    if s3fs is None:
+        raise RuntimeError("s3fs needed to access s3 storage. It is not installed.")
+
     return s3fs.S3FileSystem(
         endpoint_url=settings.S3_ENDPOINT_URL,
         key=settings.S3_KEY,
@@ -322,9 +325,6 @@ def open_gzipped_file(file_path: str | Path, mode="rt"):
     file_path = str(file_path) if not isinstance(file_path, str) else file_path
 
     if file_path.startswith("s3://"):
-        if s3fs is None:
-            raise RuntimeError("s3fs needed to access s3 storage. It is not installed.")
-
         fs = _get_s3_filesystem()
         # s3fs.open returns a file-like object compatible with gzip
         with (
