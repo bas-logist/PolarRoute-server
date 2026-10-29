@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The `polar-route` dependency is now the released version `>=1.2.0`. This is the first release in which `route_calc` accepts a route geojson.
+- Replaced the GDAL system packages in the Docker image with); `polar-route` 1.2.0 no longer depends on Fiona, and the Python geospatial wheels bundle GDAL.
+
 ### Fixed
 - Disabled celery features which are deprecated by rabbitmq >= 4.3.
+- `evaluate_route` now passes `route_type="smoothed"` to `route_calc`, which `polar-route` 1.2.0 requires to be set.
 
 ## 0.3.0 - 2026-10-26
 
