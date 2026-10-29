@@ -291,3 +291,9 @@ def cleanup_meshes(self):
     )
     meshes_to_delete = Mesh.objects.filter(created__lt=time_threshold, protect=False)
     meshes_to_delete.delete()
+
+
+@app.task(bind=True)
+def my_test_task(self):
+    # harmless task to test celery beat
+    return f"hello it's {datetime.datetime.now()}"
