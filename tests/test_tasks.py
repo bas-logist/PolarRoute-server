@@ -222,6 +222,7 @@ class TestImportNewMeshes(ImportNewMeshesCommon):
         for filename in self.mesh_filenames + [self.metadata_filename]:
             os.remove(Path(settings.MESH_DIR, filename+".gz"))
 
+        os.remove(Path(settings.MESH_DIR, self.metadata_filename))
     
     def test_import_new_meshes(self):
         
