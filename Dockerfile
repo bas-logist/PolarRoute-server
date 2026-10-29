@@ -4,14 +4,6 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=polarrouteserver.settings.docker.development
 
-# Install GDAL - used by Fiona
-RUN apt-get update && apt-get install -y \
-    gdal-bin \
-    libgdal-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-ENV GDAL_CONFIG=/usr/bin/gdal-config
-
 WORKDIR /usr/src/app
 
 # copy in everything for the dev stage, including the .git directory, importantly for dynamic versioning
@@ -24,9 +16,9 @@ RUN uv pip install --system django-debug-toolbar debugpy
 # start prod build stage, using a lighter weight base image
 FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim AS prod
 
+# libexpat1 is needed by rasterio (a meshiphi dependency)
 RUN apt-get update && apt-get install -y \
-    gdal-bin \
-    libgdal-dev \
+    libexpat1 \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
