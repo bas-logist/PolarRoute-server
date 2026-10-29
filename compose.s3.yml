@@ -1,0 +1,26 @@
+# for testing s3 integration in development, run with docker compose -f compose.yml -f compose.s3.yml <COMMAND>
+
+x-shared-env: &s3
+  POLARROUTE_MESH_DIR: s3://my-test-bucket/meshes/
+  POLARROUTE_S3_KEY: test
+  POLARROUTE_S3_SECRET: test
+  POLARROUTE_S3_ENDPOINT_URL: http://s3:80 # point at the s3 service using internal port as on same docker network
+  # POLARROUTE_S3_REGION: null
+
+
+services:
+  s3:
+    image: luofuxiang/local-s3
+    ports:
+      - "127.0.0.1:8081:80"
+    volumes:
+      - "./s3_data:/data" # bind mount local directory to persist data
+
+  app:
+    environment: *s3
+
+  celery:
+    environment: *s3
+
+  celery-beat:
+    environment: *s3

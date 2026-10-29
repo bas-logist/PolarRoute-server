@@ -34,7 +34,7 @@ By default, development deployments (using the `polarrouteserver/settings/develo
 
 ### Automatically
 
-Meshes are found automatically in the directories specified using the `POLARROUTE_MESH_DIR` & `POLARROUTE_MESH_METADATA_DIR` environment variables (see [Configuration](configuration.md) for specific behaviour). Mesh metadata files produced by PolarRoute-pipeline are used to validate newly available meshes, only meshes which are not already in the database (determined using their md5 hash) are ingested. Mesh metadatafiles must be named according to the format `upload_metadata_*.yaml.gz` to be found.
+Meshes are found automatically in the directories specified using the `POLARROUTE_MESH_DIR` & `POLARROUTE_MESH_METADATA_DIR` environment variables (see [Configuration](configuration.md) for specific behaviour). Mesh metadata files produced by PolarRoute-pipeline are used to validate newly available meshes, only meshes which are not already in the database (determined using their md5 hash) are ingested. Mesh metadatafiles must be named according to the format set in `POLARROUTE_MESH_METADATA_GLOB_PATTERN` (by default `upload_metadata_*.yaml.gz`) in order to be found automatically.
 
 ### Manually
 

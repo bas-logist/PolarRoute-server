@@ -2,12 +2,24 @@
 
 Configuration of PolarRouteServer works with environment variables. You can either set these directly or from a `.env` file. An example `.env` file is included in the repo as `env.example`.
 
-Environment variables used directly by the Django site are prefixed wit `POLARROUTE_` and those which configure Celery are prefixed with `CELERY_`.
+Environment variables used directly by the Django site are prefixed with `POLARROUTE_` and those which configure Celery are prefixed with `CELERY_`.
 
 ## Mesh settings
 
+- `POLARROUTE_MESH_METADATA_GLOB_PATTERN` - custom naming glob pattern for the metadata file produced by PolarRoute-pipeline, defaults to `"upload_metadata_*.yaml.gz"`.
 - `POLARROUTE_MESH_DIR` - absolute path to directory where mesh files will be made available (this location is periodically checked in production and new files ingested into the database based on the metadata file). A warning is logged in production if this is not set.
 - `POLARROUTE_MESH_METADATA_DIR` - as above, absolute path to directory where mesh metadata files will be made available. If this is not set, the value of `POLARROUTE_MESH_DIR` is used and a warning to this effect is logged.
+
+### Meshes in S3
+
+Either of `POLARROUTE_MESH_DIR` or `POLARROUTE_MESH_METADATA_DIR` can be used to read meshes from an S3 bucket by setting them to a value starting with `s3://`. The value should be of the form `s3://bucket-name/` and if using any prefixes for organisation, these should be included as part of this value, e.g. `s3://bucket-name/meshes/` - remembering the trailing slash.
+
+If using S3 you should also set the S3 environment variables:
+
+- `POLARROUTE_S3_ENDPOINT_URL` - only required for non-AWS S3 services.
+- `POLARROUTE_S3_KEY` - s3 access key.
+- `POLARROUTE_S3_SECRET` - s3 secret access key.
+- `POLARROUTE_S3_REGION` - s3 region, may not be required.
 
 ## Django settings
 
