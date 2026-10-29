@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Disabled celery features which are deprecated by rabbitmq >= 4.3.
 - `evaluate_route` now passes `route_type="smoothed"` to `route_calc`, which `polar-route` 1.2.0 requires to be set.
 
+### Reverted
+- Downgraded Django back to 5.2 to account for lack of Django 6.1 support in django-celery-beat.
+
 ## 0.3.0 - 2026-10-26
 
 ### Upgraded
