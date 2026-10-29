@@ -10,7 +10,7 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: polarrouteserver.settings.docker.development
       CELERY_BROKER_URL: amqp://guest:guest@rabbitmq
-      POLARROUTE_MESH_DIR: /usr/src/app/mesh
+      POLARROUTE_MESH_DIR: /usr/src/app/data/mesh
       POLARROUTE_DB_HOST: db
       POLARROUTE_DB_PORT: 5432
       POLARROUTE_SUPERUSER_USERNAME: admin
@@ -45,13 +45,33 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: polarrouteserver.settings.docker.development
       CELERY_BROKER_URL: amqp://guest:guest@rabbitmq
-      POLARROUTE_MESH_DIR: /usr/src/app/mesh
+      POLARROUTE_MESH_DIR: /usr/src/app/data/mesh
       POLARROUTE_DB_HOST: db
       POLARROUTE_DB_PORT: 5432
       POLARROUTE_STATIC_ROOT: /usr/src/app/static
     command: ["celery", "-A", "polarrouteserver", "worker", "--loglevel=info"]
     volumes:
       - ./polarrouteserver:/usr/src/app/polarrouteserver
+      - ./data/mesh:/usr/src/app/data/mesh
+    depends_on:
+      - db
+      - rabbitmq
+
+  celery-beat:
+    build:
+      context: .
+      target: dev
+    environment:
+      - DJANGO_SETTINGS_MODULE=polarrouteserver.settings.docker.development
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
+      - POLARROUTE_MESH_DIR=/usr/src/app/data/mesh
+      - POLARROUTE_DB_HOST=db
+      - POLARROUTE_DB_PORT=5432
+      - POLARROUTE_STATIC_ROOT=/usr/src/app/static
+    command: ["celery", "-A", "polarrouteserver", "beat", "--loglevel=info"]
+    volumes:
+      - ./polarrouteserver:/usr/src/app/polarrouteserver
+      - ./data/mesh:/usr/src/app/data/mesh
     depends_on:
       - db
       - rabbitmq
