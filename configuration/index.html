@@ -459,6 +459,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Mesh settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#meshes-in-s3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshes in S3
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3052,6 +3069,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Mesh settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#meshes-in-s3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshes in S3
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3103,11 +3137,21 @@
 
 <h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
 <p>Configuration of PolarRouteServer works with environment variables. You can either set these directly or from a <code>.env</code> file. An example <code>.env</code> file is included in the repo as <code>env.example</code>.</p>
-<p>Environment variables used directly by the Django site are prefixed wit <code>POLARROUTE_</code> and those which configure Celery are prefixed with <code>CELERY_</code>.</p>
+<p>Environment variables used directly by the Django site are prefixed with <code>POLARROUTE_</code> and those which configure Celery are prefixed with <code>CELERY_</code>.</p>
 <h2 id="mesh-settings">Mesh settings<a class="headerlink" href="#mesh-settings" title="Permanent link">&para;</a></h2>
 <ul>
+<li><code>POLARROUTE_MESH_METADATA_GLOB_PATTERN</code> - custom naming glob pattern for the metadata file produced by PolarRoute-pipeline, defaults to <code>"upload_metadata*.yaml.gz"</code>.</li>
 <li><code>POLARROUTE_MESH_DIR</code> - absolute path to directory where mesh files will be made available (this location is periodically checked in production and new files ingested into the database based on the metadata file). A warning is logged in production if this is not set.</li>
 <li><code>POLARROUTE_MESH_METADATA_DIR</code> - as above, absolute path to directory where mesh metadata files will be made available. If this is not set, the value of <code>POLARROUTE_MESH_DIR</code> is used and a warning to this effect is logged.</li>
+</ul>
+<h3 id="meshes-in-s3">Meshes in S3<a class="headerlink" href="#meshes-in-s3" title="Permanent link">&para;</a></h3>
+<p>Either of <code>POLARROUTE_MESH_DIR</code> or <code>POLARROUTE_MESH_METADATA_DIR</code> can be used to read meshes from an S3 bucket by setting them to a value starting with <code>s3://</code>. The value should be of the form <code>s3://bucket-name/</code> and if using any prefixes for organisation, these should be included as part of this value, e.g. <code>s3://bucket-name/meshes/</code> - remembering the trailing slash.</p>
+<p>If using S3 you should also set the S3 environment variables:</p>
+<ul>
+<li><code>POLARROUTE_S3_ENDPOINT_URL</code> - only required for non-AWS S3 services.</li>
+<li><code>POLARROUTE_S3_KEY</code> - s3 access key.</li>
+<li><code>POLARROUTE_S3_SECRET</code> - s3 secret access key.</li>
+<li><code>POLARROUTE_S3_REGION</code> - s3 region, may not be required.</li>
 </ul>
 <h2 id="django-settings">Django settings<a class="headerlink" href="#django-settings" title="Permanent link">&para;</a></h2>
 <p>The following are inherited from Django and more information can be found on their effects via the <a href="https://docs.djangoproject.com/en/5.1/ref/settings/">Django docs</a>.</p>

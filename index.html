@@ -333,6 +333,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Quickstart using docker compose (recommended)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#s3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#swagger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Swagger
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3061,6 +3089,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Quickstart using docker compose (recommended)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#s3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#swagger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Swagger
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3143,6 +3199,10 @@ gunzip<span class="w"> </span>amsr_*_SDA.json.gz
 <div class="highlight"><pre><span></span><code>docker compose exec app django-admin makemigrations
 docker compose exec app django-admin migrate
 </code></pre></div>
+<h3 id="s3">S3<a class="headerlink" href="#s3" title="Permanent link">&para;</a></h3>
+<p>Optionally, a local S3 service can be launched in development. This is not started by default, but can be enabled by started <code>docker compose</code> with the extra s3 compose file e.g. <code>docker compose -f compose.yml -f compose.s3.yml up -d</code> - the S3 endpoint will be <code>http://localhost:8081</code>.</p>
+<p>There are handy S3 commands in the <code>Makefile</code>. Run <code>make help</code> to find out more. Note: These require the <a href="https://github.com/aws/aws-cli">aws-cli</a>.</p>
+<h3 id="swagger">Swagger<a class="headerlink" href="#swagger" title="Permanent link">&para;</a></h3>
 <p>Optionally, Swagger can be used to serve an API schema. This is not started by default, but can be enabled by started <code>docker compose</code> with the <code>--profile swagger</code> option, e.g. <code>docker compose --profile swagger up -d</code> - the swagger UI will be served at <code>localhost:80/swagger</code>.</p>
 <h2 id="using-this-documentation">Using this documentation<a class="headerlink" href="#using-this-documentation" title="Permanent link">&para;</a></h2>
 <p>Most of these docs are primarily aimed at developers of the package (<a href="development/">Development</a>) or administrators who want to deploy a copy of the server (<a href="deployment/">Deployment</a>). If you are a user/web developer who would like to request routes from PolarRoute server you should check out the <a href="requesting-routes/">Requesting Routes</a> page and the <a href="api/">API Reference</a>.</p>
