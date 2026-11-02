@@ -60,20 +60,20 @@ cov-badge: ## Generate the coverage badge from .coverage file
 	@coverage-badge -o coverage.svg
 
 .PHONY: build-docs
-build-docs: ## Generate mkdocs HTML documentation
+build-docs: ## Generate properdocs HTML documentation
 	@echo "+ $@"
-	@mkdocs build
+	@properdocs build
 	@$(BROWSER) site/index.html
 
 .PHONY: serve-docs
 serve-docs: ## Serve docs locally
 	@echo "+ $@"
-	@mkdocs serve
+	@properdocs serve
 
 .PHONY: deploy-docs
 deploy-docs: ## Deploy docs to github pages
 	@echo "+ $@"
-	@mkdocs gh-deploy
+	@properdocs gh-deploy
 
 .PHONY: migrate
 migrate: ## Apply database migrations (or create for first time)
