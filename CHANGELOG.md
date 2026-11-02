@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Migrated docs site builder from mkdocs to properdocs.
 
+### Fixed
+- Catch multiple objects returned errors in mesh insert task and command.
+
 ## 0.4.0 - 2026-11-02
 
 ### Changed

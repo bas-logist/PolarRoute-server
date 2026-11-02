@@ -219,27 +219,33 @@ def import_new_meshes(self):
             continue
 
         # create an entry in the database
-        mesh, created = Mesh.objects.get_or_create(
-            md5=md5,
-            defaults={
-                "name": mesh_filename,
-                "valid_date_start": datetime.datetime.strptime(
-                    mesh_json["config"]["mesh_info"]["region"]["start_time"], "%Y-%m-%d"
-                ).replace(tzinfo=datetime.UTC),
-                "valid_date_end": datetime.datetime.strptime(
-                    mesh_json["config"]["mesh_info"]["region"]["end_time"], "%Y-%m-%d"
-                ).replace(tzinfo=datetime.UTC),
-                "created": datetime.datetime.strptime(
-                    record["created"], "%Y%m%dT%H%M%S"
-                ).replace(tzinfo=datetime.UTC),
-                "json": mesh_json,
-                "meshiphi_version": record["meshiphi"],
-                "lat_min": record["latlong"]["latmin"],
-                "lat_max": record["latlong"]["latmax"],
-                "lon_min": record["latlong"]["lonmin"],
-                "lon_max": record["latlong"]["lonmax"],
-            },
-        )
+        try:
+            mesh, created = Mesh.objects.get_or_create(
+                md5=md5,
+                defaults={
+                    "name": mesh_filename,
+                    "valid_date_start": datetime.datetime.strptime(
+                        mesh_json["config"]["mesh_info"]["region"]["start_time"],
+                        "%Y-%m-%d",
+                    ).replace(tzinfo=datetime.UTC),
+                    "valid_date_end": datetime.datetime.strptime(
+                        mesh_json["config"]["mesh_info"]["region"]["end_time"],
+                        "%Y-%m-%d",
+                    ).replace(tzinfo=datetime.UTC),
+                    "created": datetime.datetime.strptime(
+                        record["created"], "%Y%m%dT%H%M%S"
+                    ).replace(tzinfo=datetime.UTC),
+                    "json": mesh_json,
+                    "meshiphi_version": record["meshiphi"],
+                    "lat_min": record["latlong"]["latmin"],
+                    "lat_max": record["latlong"]["latmax"],
+                    "lon_min": record["latlong"]["lonmin"],
+                    "lon_max": record["latlong"]["lonmax"],
+                },
+            )
+        except Mesh.MultipleObjectsReturned as e:
+            logger.error(e)
+
         if created:
             logger.info(
                 f"Adding new mesh to database: {mesh.id} {mesh.name} {mesh.created}"

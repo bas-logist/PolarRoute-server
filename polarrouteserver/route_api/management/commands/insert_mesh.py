@@ -33,27 +33,38 @@ class Command(BaseCommand):
                     "vessel key not found in file, are you sure this is a vessel mesh?"
                 )
 
-            mesh, created = Mesh.objects.get_or_create(
-                md5=md5,
-                defaults={
-                    "name": filepath.split("/")[-1],
-                    "valid_date_start": datetime.strptime(
-                        mesh_json["config"]["mesh_info"]["region"]["start_time"],
-                        "%Y-%m-%d",
-                    ).replace(tzinfo=UTC),
-                    "valid_date_end": datetime.strptime(
-                        mesh_json["config"]["mesh_info"]["region"]["end_time"],
-                        "%Y-%m-%d",
-                    ).replace(tzinfo=UTC),
-                    "created": timezone.now(),
-                    "json": mesh_json,
-                    "meshiphi_version": "not found",
-                    "lat_min": mesh_json["config"]["mesh_info"]["region"]["lat_min"],
-                    "lat_max": mesh_json["config"]["mesh_info"]["region"]["lat_max"],
-                    "lon_min": mesh_json["config"]["mesh_info"]["region"]["long_min"],
-                    "lon_max": mesh_json["config"]["mesh_info"]["region"]["long_max"],
-                },
-            )
+            try:
+                mesh, created = Mesh.objects.get_or_create(
+                    md5=md5,
+                    defaults={
+                        "name": filepath.split("/")[-1],
+                        "valid_date_start": datetime.strptime(
+                            mesh_json["config"]["mesh_info"]["region"]["start_time"],
+                            "%Y-%m-%d",
+                        ).replace(tzinfo=UTC),
+                        "valid_date_end": datetime.strptime(
+                            mesh_json["config"]["mesh_info"]["region"]["end_time"],
+                            "%Y-%m-%d",
+                        ).replace(tzinfo=UTC),
+                        "created": timezone.now(),
+                        "json": mesh_json,
+                        "meshiphi_version": "not found",
+                        "lat_min": mesh_json["config"]["mesh_info"]["region"][
+                            "lat_min"
+                        ],
+                        "lat_max": mesh_json["config"]["mesh_info"]["region"][
+                            "lat_max"
+                        ],
+                        "lon_min": mesh_json["config"]["mesh_info"]["region"][
+                            "long_min"
+                        ],
+                        "lon_max": mesh_json["config"]["mesh_info"]["region"][
+                            "long_max"
+                        ],
+                    },
+                )
+            except Mesh.MultipleObjectsReturned as e:
+                self.stderr.write(e)
 
             if created:
                 self.stdout.write(
