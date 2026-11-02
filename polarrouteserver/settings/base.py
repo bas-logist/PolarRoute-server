@@ -20,7 +20,7 @@ BASE_DIR = os.getenv("POLARROUTE_BASE_DIR", os.getcwd())
 MESH_DIR = os.getenv("POLARROUTE_MESH_DIR", None)
 MESH_METADATA_DIR = os.getenv("POLARROUTE_MESH_METADATA_DIR", None)
 MESH_METADATA_GLOB_PATTERN = os.getenv(
-    "POLARROUTE_MESH_METADATA_GLOB_PATTERN", "upload_metadata_*.yaml.gz"
+    "POLARROUTE_MESH_METADATA_GLOB_PATTERN", "upload_metadata*.yaml.gz"
 )
 
 # S3 Bucket settings
