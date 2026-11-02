@@ -10,7 +10,7 @@ WORKDIR /usr/src/app
 COPY . .
 COPY --chmod=775 docker-entrypoint.sh .
 
-RUN uv pip install --system -e .
+RUN uv pip install --system -e ".[s3]"
 RUN uv pip install --system django-debug-toolbar debugpy
 
 # start prod build stage, using a lighter weight base image

@@ -1,3 +1,4 @@
+import aiomoto
 import pytest
 from django_celery_beat.schedulers import DatabaseScheduler
 
@@ -27,3 +28,9 @@ def make_scheduler(db):
         finalize = getattr(s, "_finalize", None)
         if finalize is not None:
             finalize.cancel()  # stop the exit-time sync from firing later
+
+@pytest.fixture(scope="function")
+def s3_mock():
+    """Starts moto S3 mock before each test and stops it after."""
+    with aiomoto.mock_aws(server_mode=True):
+        yield

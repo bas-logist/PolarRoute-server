@@ -48,6 +48,9 @@ polarrouteserver = [
 ]
 
 [project.optional-dependencies]
+s3 = [
+    "s3fs",
+]
 dev = [
     "django-debug-toolbar",
     "pre-commit",
@@ -55,6 +58,7 @@ dev = [
     "pytest-celery",
     "pytest-django",
     "ruff",
+    "aiomoto[server]", # s3 mocking library
 ]
 build = [
     "build"

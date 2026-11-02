@@ -1,6 +1,8 @@
 .DEFAULT_GOAL := help
 RABBITMQ_CONTAINER := "prs-rabbitmq"
 SWAGGER_CONTAINER := "prs-swagger-ui"
+DEV_S3_BUCKET := "my-test-bucket"
+DEV_S3_PORT := "8081"
 
 define BROWSER_PYSCRIPT
 import os, webbrowser, sys
@@ -172,8 +174,30 @@ prep-release: ## (re)builds the apischema, preps the changelog (usage: make prep
 
 	@echo "Done."
 
+.PHONY:s3-mb
+s3-make-bucket: ## make a bucket in the s3 dev container run by docker compose (requires aws cli)
+	@echo "+ $@"
+	@aws --endpoint-url=http://localhost:${DEV_S3_PORT} s3 mb s3://${DEV_S3_BUCKET}
+
+.PHONY:s3-ls
+s3-ls: ## list bucket contents in the s3 dev container run by docker compose (requires aws cli)
+	@echo "+ $@"
+	@aws --endpoint-url=http://localhost:${DEV_S3_PORT} s3 ls s3://${DEV_S3_BUCKET}  --recursive --human-readable --summarize
+
+.PHONY:s3-cp
+s3-cp: ## copy a file to the bucket in the s3 dev container run by docker compose (requires aws cli). Usage: make s3-cp file=path/to/file.txt
+	@echo "+ $@"
+		@if [ -z "$(file)" ]; then \
+		echo "ERROR: file is not set."; \
+		echo "Usage: make s3-cp file=path/to/file.txt"; \
+		exit 1; \
+	fi
+
+	@aws  --endpoint-url=http://localhost:${DEV_S3_PORT} s3 cp $(file) s3://${DEV_S3_BUCKET}/$(prefix)/
+
+
 .PHONY: help
 help:
 	@echo "Note: Remember to activate your virtual environment (if used)."
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
