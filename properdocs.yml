@@ -2,7 +2,8 @@ site_name: PolarRoute-Server
 repo_url: https://github.com/bas-logist/polarroute-server/
 edit_uri: edit/main/docs/
 theme: 
-  name: material
+  name: materialx
+  topbar_style: primary
   logo: https://cdn.web.bas.ac.uk/bas-style-kit/0.7.3/img/logos-symbols/bas-roundel-inverse-transparent-64.png
   favicon: https://cdn.web.bas.ac.uk/bas-style-kit/0.7.3/img/favicon/favicon-16x16.png
   icon:
@@ -13,20 +14,27 @@ theme:
     # Enables "edit this page" to contribute to docs
     - content.action.edit
   palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
-      scheme: default
+      scheme: default 
       primary: orange
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
+
     # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: orange
       toggle:
         icon: material/brightness-4
-        name: Switch to light mode
+        name: Switch to system preference
 
 plugins: 
   - search

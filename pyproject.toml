@@ -72,8 +72,8 @@ cov-badge = [
 
 [dependency-groups]
 docs = [
-    "mkdocs",
-    "mkdocs-material",
+    "properdocs",
+    "mkdocs-materialx",
     "mkdocs-autoapi",
     "mkdocs-include-markdown-plugin",
     "mkdocstrings[python]",
