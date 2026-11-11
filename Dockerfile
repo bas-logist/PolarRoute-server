@@ -32,10 +32,9 @@ COPY --from=dev --chown=django:django /usr/local/lib/python3.13/site-packages/ /
 COPY --from=dev --chown=django:django /usr/local/bin/ /usr/local/bin/
 
 WORKDIR /usr/src/app
-
-COPY --chown=django:django --chmod=775 docker-entrypoint.sh .
-COPY --chown=django:django pyproject.toml manage.py /usr/src/app/
-COPY --chown=django:django polarrouteserver /usr/src/app/polarrouteserver
+COPY --from=dev --chown=django:django --chmod=775 /usr/src/app/docker-entrypoint.sh .
+COPY --from=dev --chown=django:django /usr/src/app/pyproject.toml /usr/src/app/manage.py ./
+COPY --from=dev --chown=django:django /usr/src/app/polarrouteserver ./polarrouteserver/
 
 # set the settings module
 ENV DJANGO_SETTINGS_MODULE=polarrouteserver.settings.docker.production
