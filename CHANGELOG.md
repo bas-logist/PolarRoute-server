@@ -6,7 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
- 
+
+### Fixed
+- Copy all package files into prod build stage of docker image.
+- Reinstate some warnings when Mesh dir settings not set.
+- Remove some logging setup warnings which were showing incorrectly in the docker production environment.
+- Re-enable some celery/rabbitmq behaviour and constrain celery version to > 5.7.0.
+
 ## 0.4.1 - 2026-11-03
  
 ### Changed
