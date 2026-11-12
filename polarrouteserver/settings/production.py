@@ -8,6 +8,9 @@ logger = logging.getLogger(__name__)
 
 CELERY_BEAT_SCHEDULE = {}
 
+# include whitenoise for static file serving, must be exactly after "django.middleware.security.SecurityMiddleware"
+MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
+
 if MESH_DIR is None:
     logger.warning(
         """
