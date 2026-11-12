@@ -127,6 +127,10 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 
 CORS_ALLOW_METHODS = ("DELETE", "GET", "POST", "OPTIONS")
 
+CSRF_TRUSTED_ORIGINS = []
+if os.getenv("POLARROUTE_CSRF_TRUSTED_ORIGINS", None) is not None:
+    CSRF_TRUSTED_ORIGINS.extend(os.getenv("POLARROUTE_CSRF_TRUSTED_ORIGINS").split(","))
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

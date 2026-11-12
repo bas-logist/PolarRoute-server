@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
  
+## 0.4.4 - 2026-11-12
+
+### Added
+- `POLARROUTE_CSRF_TRUSTED_ORIGINS` configuration environment variable to expose setting of `CSRF_TRUSTED_ORIGINS` Django setting.
+
 ## 0.4.3 - 2026-11-12
 
 ### Fixed

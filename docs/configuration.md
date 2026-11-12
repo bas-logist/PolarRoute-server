@@ -30,6 +30,7 @@ The following are inherited from Django and more information can be found on the
 - `DJANGO_SETTINGS_MODULE` - sets the settings envrionment. Options: `polarrouteserver.settings.{production,development,test}` (Default: `polarrroutesserver.settings.production`)
 - `POLARROUTE_ALLOWED_HOSTS` - comma-separated (no spaces) list of IP addresses or hostnames allowed for the server.
 - `POLARROUTE_CORS_ALLOWED_ORIGINS` -  comma-separated (no spaces) list of IP addresses allowed for Cross Origin Site Requests. (See [django-cors-headers](https://pypi.org/project/django-cors-headers/) on PyPI for more.)
+- `POLARROUTE_CSRF_TRUSTED_ORIGINS` - comma-separated (no spaces) list of trusted origins for unsafe requests. (See [Django docs](https://docs.djangoproject.com/en/6.1/ref/settings/#csrf-trusted-origins) for more information).
 - `CELERY_BROKER_URL` - URL for rabbitMQ message broker used by celery. (Default: `amqp://guest:guest@localhost`)
 - `POLARROUTE_LOG_LEVEL` - sets the logging level from standard log level options: INFO, DEBUG, ERROR, WARNING etc. (Default: `INFO`)
 - `POLARROUTE_LOG_DIR` - sets the output directory for logs. By default only used in production settings environment.
